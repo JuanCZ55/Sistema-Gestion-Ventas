@@ -4,19 +4,13 @@ using SistemaGestionVentas.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Obtenemos la Cadena de ConexiÛn
+// Cadena de conexi√≥n
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// 2. REGISTRAMOS TU DB-CONTEXT (AQUÕ USAMOS POMELO)
-// Le decimos a la app que "existe" un servicio llamado 'Context'
-// y que debe usar MySQL con la cadena de conexiÛn.
-builder.Services.AddDbContext<Context>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
-);
+// Registrar DbContext con PostgreSQL
+builder.Services.AddDbContext<Context>(options => options.UseNpgsql(connectionString));
 
-// 3. REGISTRAMOS LA AUTENTICACI”N POR COOKIES
-// Esto prepara el sistema para el Login/Logout.
-// Le decimos que si un usuario no est· logueado, lo redirija a "/Account/Login"
+// Autenticaci√≥n por cookies
 builder
     .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -25,32 +19,26 @@ builder
         options.AccessDeniedPath = "/Account/AccessDenied";
     });
 
-// 4. Mantenemos el servicio de Controladores y Vistas
+// Servicios de controladores y vistas
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// --- SECCI”N DE PIPELINE (MIDDLEWARE) ---
-
-// Configure the HTTP request pipeline.
+// Pipeline de middleware
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
 
-// Agregamos el soporte para archivos est·ticos (CSS, JS, im·genes de avatares)
-// que estÈn en la carpeta wwwroot
+// Archivos est√°ticos
 app.UseStaticFiles();
 
 app.UseRouting();
 
-// 5. ACTIVAMOS LA AUTENTICACI”N
-// Este middleware revisa la cookie en cada peticiÛn.
-// DEBE ir ANTES de UseAuthorization.
+// Autenticaci√≥n (antes de autorizaci√≥n)
 app.UseAuthentication();
 
-// 6. ACTIVAMOS LA AUTORIZACI”N
-// Este middleware es el que chequea los roles y los [Authorize]
+// Autorizaci√≥n
 app.UseAuthorization();
 
 app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");
