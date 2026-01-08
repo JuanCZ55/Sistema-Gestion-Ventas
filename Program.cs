@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using SistemaGestionVentas.Data;
+using SistemaGestionVentas.Services;
+using Supabase;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +11,19 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 // Registrar DbContext con PostgreSQL
 builder.Services.AddDbContext<Context>(options => options.UseNpgsql(connectionString));
+
+builder.Services.AddSingleton<Supabase.Client>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var url = config["Supabase:Url"];
+    var key = config["Supabase:Key"];
+    var options = new SupabaseOptions { AutoConnectRealtime = false };
+    var supabase = new Supabase.Client(url, key, options);
+    supabase.InitializeAsync().Wait();
+    return supabase;
+});
+
+builder.Services.AddSingleton<SupabaseStorageService>();
 
 // Autenticación por cookies
 builder
