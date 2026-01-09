@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +12,7 @@ using SistemaGestionVentas.Models;
 
 namespace SistemaGestionVentas.Controllers
 {
+    [Authorize(Policy = "Admin")]
     public class UsuarioController : Controller
     {
         private readonly Context _context;
@@ -33,8 +36,7 @@ namespace SistemaGestionVentas.Controllers
                 return NotFound();
             }
 
-            var usuario = await _context.Usuario
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var usuario = await _context.Usuario.FirstOrDefaultAsync(m => m.Id == id);
             if (usuario == null)
             {
                 return NotFound();
@@ -54,10 +56,14 @@ namespace SistemaGestionVentas.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,DNI,Nombre,Apellido,Email,Pass,Avatar,Rol,Estado")] Usuario usuario)
+        public async Task<IActionResult> Create(
+            [Bind("Id,DNI,Nombre,Apellido,Email,Pass,Avatar,Rol,Estado")] Usuario usuario
+        )
         {
             if (ModelState.IsValid)
             {
+                // Hashear la contraseña
+                usuario.Pass = BCrypt.Net.BCrypt.HashPassword(usuario.Pass);
                 _context.Add(usuario);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -86,7 +92,10 @@ namespace SistemaGestionVentas.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,DNI,Nombre,Apellido,Email,Pass,Avatar,Rol,Estado")] Usuario usuario)
+        public async Task<IActionResult> Edit(
+            int id,
+            [Bind("Id,DNI,Nombre,Apellido,Email,Pass,Avatar,Rol,Estado")] Usuario usuario
+        )
         {
             if (id != usuario.Id)
             {
@@ -97,6 +106,10 @@ namespace SistemaGestionVentas.Controllers
             {
                 try
                 {
+                    if (!string.IsNullOrEmpty(usuario.Pass))
+                    {
+                        usuario.Pass = BCrypt.Net.BCrypt.HashPassword(usuario.Pass);
+                    }
                     _context.Update(usuario);
                     await _context.SaveChangesAsync();
                 }
@@ -124,8 +137,7 @@ namespace SistemaGestionVentas.Controllers
                 return NotFound();
             }
 
-            var usuario = await _context.Usuario
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var usuario = await _context.Usuario.FirstOrDefaultAsync(m => m.Id == id);
             if (usuario == null)
             {
                 return NotFound();
