@@ -1,5 +1,9 @@
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using SistemaGestionVentas.Data;
 using SistemaGestionVentas.Services;
 using Supabase;
@@ -25,14 +29,47 @@ builder.Services.AddSingleton<Supabase.Client>(sp =>
 
 builder.Services.AddSingleton<SupabaseStorageService>();
 
-// Autenticación por cookies
+builder.Services.AddSingleton<JwtService>();
+
+// Configuración de JWT
+var jwtSettings = builder.Configuration.GetSection("TokenAuthentication");
+var secretKey = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]);
+
 builder
-    .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .Services.AddAuthentication(options =>
+    {
+        // Por defecto, MVC usa Cookies
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    })
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
         options.AccessDeniedPath = "/Account/AccessDenied";
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+        };
     });
+
+// Configuración de Políticas (Roles)
+builder.Services.AddAuthorization(options =>
+{
+    // Política Admin: Solo para rol 1
+    options.AddPolicy("Admin", policy => policy.RequireClaim(ClaimTypes.Role, "1"));
+
+    // Política Vendedor: Acceso para rol 1 o 2
+    options.AddPolicy("Vendedor", policy => policy.RequireClaim(ClaimTypes.Role, "1", "2"));
+});
 
 // Servicios de controladores y vistas
 builder.Services.AddControllersWithViews();
