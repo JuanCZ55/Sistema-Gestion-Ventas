@@ -17,6 +17,8 @@ namespace SistemaGestionVentas.Services
 
         public string GenerarToken(Usuario usuario)
         {
+            ArgumentNullException.ThrowIfNull(usuario);
+
             // Claims (Datos del usuario en el token)
             var claims = new List<Claim>
             {
@@ -26,15 +28,17 @@ namespace SistemaGestionVentas.Services
             };
 
             // Credenciales de firma
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["TokenAuthentication:SecretKey"])
-            );
+            var secretKey = _config["TokenAuthentication:SecretKey"];
+            ArgumentNullException.ThrowIfNull(secretKey);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             // Crear el token
+            var issuer = _config["TokenAuthentication:Issuer"];
+            var audience = _config["TokenAuthentication:Audience"];
             var token = new JwtSecurityToken(
-                issuer: _config["TokenAuthentication:Issuer"],
-                audience: _config["TokenAuthentication:Audience"],
+                issuer: issuer,
+                audience: audience,
                 claims: claims,
                 expires: DateTime.Now.AddMinutes(60),
                 signingCredentials: creds
