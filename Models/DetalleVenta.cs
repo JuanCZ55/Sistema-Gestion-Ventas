@@ -16,14 +16,17 @@ namespace SistemaGestionVentas.Models
         public decimal PrecioUnitario { get; set; }
 
         // --- Relaciones ---
+
+        [Required(ErrorMessage = "La venta es obligatoria")]
         public int VentaId { get; set; }
 
         [ForeignKey("VentaId")]
-        public Venta Venta { get; set; }
+        public Venta Venta { get; set; } = null!;
 
+        [Required(ErrorMessage = "El producto es obligatorio")]
         public int ProductoId { get; set; }
 
         [ForeignKey("ProductoId")]
-        public Producto Producto { get; set; }
+        public Producto Producto { get; set; } = null!;
     }
 }

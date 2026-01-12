@@ -8,7 +8,7 @@ namespace SistemaGestionVentas.Models
         public int Id { get; set; }
 
         [Required]
-        public DateTime Fecha { get; set; }
+        public DateTime Fecha { get; set; } = DateTime.Now;
 
         [Required]
         [Column(TypeName = "decimal(10,2)")]
@@ -20,15 +20,16 @@ namespace SistemaGestionVentas.Models
         public string? MotivoAnulacion { get; set; }
 
         // --- Relaciones ---
+        [Required(ErrorMessage = "El método de pago es obligatorio")]
         public int MetodoPagoId { get; set; }
 
         [ForeignKey("MetodoPagoId")]
-        public MetodoPago MetodoPago { get; set; }
+        public MetodoPago MetodoPago { get; set; } = null!;
 
         public int UsuarioCreadorId { get; set; }
 
         [ForeignKey("UsuarioCreadorId")]
-        public Usuario UsuarioCreador { get; set; }
+        public Usuario UsuarioCreador { get; set; } = null!;
 
         public int? UsuarioModificadorId { get; set; }
 

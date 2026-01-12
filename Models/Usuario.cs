@@ -7,30 +7,37 @@ namespace SistemaGestionVentas.Models
     {
         public int Id { get; set; }
 
-        [Required]
-        public string DNI { get; set; }
+        [Required(ErrorMessage = "El DNI es obligatorio")]
+        [RegularExpression(
+            @"^\d{7,8}$",
+            ErrorMessage = "El DNI debe tener 7 u 8 digitos numericos"
+        )]
+        public string DNI { get; set; } = null!;
 
-        [Required]
-        public string Nombre { get; set; }
+        [Required(ErrorMessage = "El nombre es obligatorio")]
+        public string Nombre { get; set; } = null!;
 
-        [Required]
-        public string Apellido { get; set; }
+        [Required(ErrorMessage = "El apellido es obligatorio")]
+        public string Apellido { get; set; } = null!;
 
-        [Required]
-        public string Email { get; set; }
+        [Required(ErrorMessage = "El email es obligatorio")]
+        [EmailAddress(ErrorMessage = "El email no es válido")]
+        public string Email { get; set; } = null!;
 
-        [Required]
-        public string Pass { get; set; }
+        [Required(ErrorMessage = "La contraseña es obligatoria")]
+        public string Pass { get; set; } = null!;
 
         public string? Avatar { get; set; }
 
         [NotMapped]
         public IFormFile? Favatar { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "El rol es obligatorio")]
+        [Range(1, 2, ErrorMessage = "El rol debe ser 1 (admin) o 2 (Empleado)")]
         public int Rol { get; set; } // 1-admin 2-Empleado
 
-        [Required]
+        [Required(ErrorMessage = "El estado es obligatorio")]
+        [Range(1, 2, ErrorMessage = "El estado debe ser 1 (Activo) o 2 (Inactivo)")]
         public int Estado { get; set; } = 1; // 1=Activo, 2=Inactivo
     }
 }
