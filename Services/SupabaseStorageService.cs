@@ -11,11 +11,10 @@ namespace SistemaGestionVentas.Services
             _supabase = supabase;
         }
 
-        /// Sube una imagen al bucket "sgv" en la carpeta especificada.
-        /// Genera un nombre único y retorna la URL pública si es exitoso sino null.
         public async Task<string?> UploadImageAsync(IFormFile file, string folder = "productos")
         {
-            if (file == null || file.Length == 0)
+            ArgumentNullException.ThrowIfNull(file);
+            if (file.Length == 0)
                 throw new ArgumentException("Archivo no válido");
 
             var bucket = _supabase.Storage.From("sgv");
@@ -24,7 +23,7 @@ namespace SistemaGestionVentas.Services
             var bytes = memoryStream.ToArray();
 
             var folderPrefix = string.IsNullOrEmpty(folder) ? "" : $"{folder}/";
-            var fileName = $"{folderPrefix}{Guid.NewGuid()}_{file.FileName}";
+            var fileName = $"{folderPrefix}{Guid.NewGuid()}_{file.FileName ?? "unknown"}";
 
             var result = await bucket.Upload(
                 bytes,
@@ -43,6 +42,8 @@ namespace SistemaGestionVentas.Services
         /// Retorna true si el archivo fue eliminado exitosamente, false en caso contrario.
         public async Task<bool> DeleteFileAsync(string fileName, string folder = "")
         {
+            ArgumentNullException.ThrowIfNull(fileName);
+
             var bucket = _supabase.Storage.From("sgv");
             var folderPrefix = string.IsNullOrEmpty(folder) ? "" : $"{folder}/";
             var fullFileName = $"{folderPrefix}{fileName}";
