@@ -20,7 +20,9 @@ builder.Services.AddSingleton<Supabase.Client>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
     var url = config["Supabase:Url"];
+    ArgumentNullException.ThrowIfNull(url);
     var key = config["Supabase:Key"];
+    ArgumentNullException.ThrowIfNull(key);
     var options = new SupabaseOptions { AutoConnectRealtime = false };
     var supabase = new Supabase.Client(url, key, options);
     supabase.InitializeAsync().Wait();
@@ -33,12 +35,13 @@ builder.Services.AddSingleton<JwtService>();
 
 // Configuración de JWT
 var jwtSettings = builder.Configuration.GetSection("TokenAuthentication");
-var secretKey = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]);
+var secretKeyString = jwtSettings["SecretKey"];
+ArgumentNullException.ThrowIfNull(secretKeyString);
+var secretKey = Encoding.UTF8.GetBytes(secretKeyString);
 
 builder
     .Services.AddAuthentication(options =>
     {
-        // Por defecto, MVC usa Cookies
         options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
