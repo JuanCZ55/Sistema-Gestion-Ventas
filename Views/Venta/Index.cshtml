@@ -1,71 +1,79 @@
 ﻿@model IEnumerable<SistemaGestionVentas.Models.Venta>
 
 @{
-    ViewData["Title"] = "Index";
+  ViewData["Title"] = "Index";
 }
 
 <h1>Index</h1>
 
 <p>
-    <a asp-action="Create">Create New</a>
+  <a asp-action="Create">Create New</a>
 </p>
 <table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Fecha)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Total)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Estado)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.MotivoAnulacion)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.MetodoPago)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.UsuarioCreador)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.UsuarioModificador)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Fecha)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Total)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Estado)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.MotivoAnulacion)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.MetodoPago.Nombre)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.UsuarioCreador.Apellido)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.UsuarioModificador.Apellido)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
+  <thead>
+    <tr>
+      <th>
+        @Html.DisplayNameFor(model => model.Fecha)
+      </th>
+      <th>
+        @Html.DisplayNameFor(model => model.Total)
+      </th>
+      <th>
+        @Html.DisplayNameFor(model => model.Estado)
+      </th>
+      <th>
+        @Html.DisplayNameFor(model => model.MotivoAnulacion)
+      </th>
+      <th>
+        @Html.DisplayNameFor(model => model.MetodoPago)
+      </th>
+      <th>
+        @Html.DisplayNameFor(model => model.UsuarioCreador)
+      </th>
+      <th>
+        @Html.DisplayNameFor(model => model.UsuarioModificador)
+      </th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    @foreach (var item in Model)
+    {
+      <tr>
+        <td>
+          @Html.DisplayFor(modelItem => item.Fecha)
+        </td>
+        <td>
+          @Html.DisplayFor(modelItem => item.Total)
+        </td>
+        <td>
+          @Html.DisplayFor(modelItem => item.Estado)
+        </td>
+        <td>
+          @Html.DisplayFor(modelItem => item.MotivoAnulacion)
+        </td>
+        <td>
+          @Html.DisplayFor(modelItem => item.MetodoPago.Nombre)
+        </td>
+        <td>
+          @Html.DisplayFor(modelItem => item.UsuarioCreador.Apellido)
+        </td>
+        <td>
+          @if (item.UsuarioModificador != null)
+          {
+            @item.UsuarioModificador.Apellido
+          }
+          else
+          {
+            <span>N/A</span>
+          }
+        </td>
+        <td>
+          <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+          <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+          <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+        </td>
+      </tr>
+    }
+  </tbody>
 </table>
