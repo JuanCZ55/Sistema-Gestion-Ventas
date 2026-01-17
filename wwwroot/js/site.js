@@ -2,3 +2,59 @@
 // for details on configuring this project to bundle and minify static web assets.
 
 // Write your JavaScript code.
+
+// Inicialización de Tom Select
+document.addEventListener("DOMContentLoaded", function () {
+  new TomSelect("#user-select", {
+    valueField: "id",
+    labelField: "nombre",
+    searchField: ["codigo", "nombre"],
+    load: function (query, callback) {
+      fetch(`/api/productos?q=${encodeURIComponent(query)}`)
+        .then((r) => r.json())
+        .then((data) => callback(data))
+        .catch(() => callback());
+    },
+    onChange: function (id) {
+      if (!id) return;
+      onSeleccion(id);
+    },
+    render: {
+      option: function (item, escape) {
+        return `
+          <div class="ts-option-custom">
+            <div class="ts-codigo">${escape(item.codigo)}</div>
+            <div class="ts-main">
+              <span class="ts-precio">$${escape(item.precioVenta)}</span>
+              <span class="ts-nombre">${escape(item.nombre)}</span>
+            </div>
+          </div>
+        `;
+      },
+      item: function (item, escape) {
+        return `<div>${escape(item.nombre)}</div>`;
+      },
+    },
+  });
+});
+
+// Función para mostrar Toasts
+window.showToast = function (type, message) {
+  const toastEl = document.getElementById("appToast");
+  const body = document.getElementById("appToastBody");
+  toastEl.className = `toast text-white bg-${type} border-0`;
+  body.textContent = message;
+  const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+  toast.show();
+};
+
+// Atajo de teclado para enfocar Tom Select con '|'
+document.addEventListener("keydown", function (e) {
+  if (e.key === "|") {
+    e.preventDefault();
+    const tsInput = document.querySelector("#user-select + .ts-wrapper input");
+    if (tsInput) {
+      tsInput.focus();
+    }
+  }
+});
