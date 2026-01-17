@@ -54,8 +54,8 @@ namespace SistemaGestionVentas.Controllers
             // Generar Token JWT para APIs
             var token = _jwtService.GenerarToken(usuario);
 
-            // Pasar token a la vista
-            ViewBag.Token = token;
+            // Pasar token a la vista usando TempData para persistir en redirect
+            TempData["Token"] = token;
 
             return RedirectToAction("Index", "Home");
         }
