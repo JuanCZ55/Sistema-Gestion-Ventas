@@ -1,0 +1,61 @@
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-icon">
+      <i class="bi bi-x-diamond"></i>
+    </div>
+    <span class="sidebar-text fw-bold">SistemaGestionVentas</span>
+  </div>
+  <div class="sidebar-content">
+    <a class="sidebar-link" asp-area="" asp-controller="Home" asp-action="Index">
+      <div class="sidebar-icon"><i class="bi bi-house-door"></i></div>
+      <span class="sidebar-text">Inicio</span>
+    </a>
+    <a class="sidebar-link" asp-area="" asp-controller="Venta" asp-action="Index">
+      <div class="sidebar-icon"><i class="bi bi-cart2"></i></div>
+      <span class="sidebar-text">Ventas</span>
+    </a>
+    <a class="sidebar-link" asp-area="" asp-controller="Producto" asp-action="Index">
+      <div class="sidebar-icon"><i class="bi bi-box-seam"></i></div>
+      <span class="sidebar-text">Productos</span>
+    </a>
+    <a class="sidebar-link" asp-area="" asp-controller="Categoria" asp-action="Index">
+      <div class="sidebar-icon"><i class="bi bi-tags"></i></div>
+      <span class="sidebar-text">Categorías</span>
+    </a>
+    <a class="sidebar-link" asp-area="" asp-controller="Proveedor" asp-action="Index">
+      <div class="sidebar-icon"><i class="bi bi-truck"></i></div>
+      <span class="sidebar-text">Proveedores</span>
+    </a>
+    <a class="sidebar-link" asp-area="" asp-controller="AjusteStock" asp-action="Index">
+      <div class="sidebar-icon"><i class="bi bi-arrow-repeat"></i></div>
+      <span class="sidebar-text">Ajustes Stock</span>
+    </a>
+    <div id="admin">
+      <a class="sidebar-link" asp-area="" asp-controller="Usuario" asp-action="Index">
+        <div class="sidebar-icon"><i class="bi bi-people"></i></div>
+        <span class="sidebar-text">Usuarios</span>
+      </a>
+      <a class="sidebar-link" asp-area="" asp-controller="MetodoPago" asp-action="Index">
+        <div class="sidebar-icon"><i class="bi bi-credit-card"></i></div>
+        <span class="sidebar-text">Métodos de Pago</span>
+      </a>
+      <a class="sidebar-link" asp-area="" asp-controller="MotivoAjuste" asp-action="Index">
+        <div class="sidebar-icon"><i class="bi bi-exclamation-diamond"></i></div>
+        <span class="sidebar-text">Motivos de Ajuste</span>
+      </a>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <a class="sidebar-link">
+      <div class="sidebar-icon"><i class="bi bi-person-gear"></i></div>
+      <span class="sidebar-text">"Nombre y Apellido"</span>
+    </a>
+    <form asp-controller="Login" asp-action="Logout" method="post" class="sidebar-link">
+      @Html.AntiForgeryToken()
+      <button type="submit" class="btn btn-link sidebar-link">
+        <div class="sidebar-icon"><i class="bi bi-box-arrow-right"></i></div>
+        <span class="sidebar-text">Salir</span>
+      </button>
+    </form>
+  </div>
+</nav>
