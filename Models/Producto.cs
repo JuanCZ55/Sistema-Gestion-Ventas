@@ -39,6 +39,9 @@ namespace SistemaGestionVentas.Models
         [Required]
         public int Estado { get; set; } = 1; // 1=Activo, 2=Inactivo
 
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+
         // --- Relaciones ---
         [Required(ErrorMessage = "La categoría es obligatoria")]
         public int CategoriaId { get; set; }
