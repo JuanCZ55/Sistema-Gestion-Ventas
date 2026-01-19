@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using SistemaGestionVentas.Data;
+using SistemaGestionVentas.Models;
 using SistemaGestionVentas.Services;
 
 namespace SistemaGestionVentas.Controllers
@@ -25,21 +26,26 @@ namespace SistemaGestionVentas.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index(string email, string password)
+        public async Task<IActionResult> Index(LoginViewModel model)
         {
-            // Validar usuario en BD
-            var usuario = _context.Usuario.FirstOrDefault(u => u.Email == email);
-
-            if (usuario == null || !BCrypt.Net.BCrypt.Verify(password, usuario.Pass))
+            if (!ModelState.IsValid)
             {
-                ModelState.AddModelError("Credenciales", "Credenciales inválidas");
-                return View();
+                return View(model);
             }
+            // Validar usuario en BD
+            var usuario = _context.Usuario.FirstOrDefault(u => u.Email == model.Email);
 
+            if (usuario == null || !BCrypt.Net.BCrypt.Verify(model.Password, usuario.Pass))
+            {
+                TempData["ToastType"] = "danger";
+                TempData["ToastMessage"] = "Credenciales invalidas.";
+                return RedirectToAction("Index");
+            }
             // Crear Cookie para MVC
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, usuario.Email),
+                new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+                new Claim(ClaimTypes.Name, $"{usuario.Nombre} {usuario.Apellido}"),
                 new Claim(ClaimTypes.Role, usuario.Rol.ToString()),
             };
             var identity = new ClaimsIdentity(
@@ -54,9 +60,20 @@ namespace SistemaGestionVentas.Controllers
             // Generar Token JWT para APIs
             var token = _jwtService.GenerarToken(usuario);
 
-            // Pasar token a la vista usando TempData para persistir en redirect
-            TempData["Token"] = token;
-
+            // Almacenar token en cookie HttpOnly
+            Response.Cookies.Append(
+                "jwt",
+                token,
+                new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.UtcNow.AddHours(1),
+                }
+            );
+            TempData["ToastType"] = "success";
+            TempData["ToastMessage"] = "Inicio de sesion exitoso.";
             return RedirectToAction("Index", "Home");
         }
 
@@ -64,6 +81,7 @@ namespace SistemaGestionVentas.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            Response.Cookies.Delete("jwt");
             return RedirectToAction("Index", "Home");
         }
     }
