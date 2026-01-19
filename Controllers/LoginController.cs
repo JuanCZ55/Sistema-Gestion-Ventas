@@ -82,6 +82,8 @@ namespace SistemaGestionVentas.Controllers
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             Response.Cookies.Delete("jwt");
+            TempData["ToastType"] = "info";
+            TempData["ToastMessage"] = "Cierre de sesion exitoso.";
             return RedirectToAction("Index", "Home");
         }
     }
