@@ -1,10 +1,13 @@
 <nav class="sidebar">
-  <div class="sidebar-header">
+  @* <div class="sidebar-header">
     <div class="sidebar-icon">
       <i class="bi bi-x-diamond"></i>
     </div>
-    <span class="sidebar-text fw-bold">SistemaGestionVentas</span>
-  </div>
+    <span class="sidebar-text fw-bold">Stocking</span>
+  </div> *@
+  @{
+    var nombreUsuario = User.Identity?.Name ?? "Usuario";
+  }
   <div class="sidebar-content">
     <a class="sidebar-link" asp-area="" asp-controller="Home" asp-action="Index">
       <div class="sidebar-icon"><i class="bi bi-house-door"></i></div>
@@ -46,13 +49,13 @@
     </div>
   </div>
   <div class="sidebar-footer">
-    <a class="sidebar-link">
+    <a class="sidebar-link" style="height: 55px;">
       <div class="sidebar-icon"><i class="bi bi-person-gear"></i></div>
-      <span class="sidebar-text">"Nombre y Apellido"</span>
+      <span class="sidebar-text">@nombreUsuario</span>
     </a>
-    <form asp-controller="Login" asp-action="Logout" method="post" class="sidebar-link">
+    <form asp-controller="Login" asp-action="Logout" method="post" class="sidebar-link" style="height: 50px;">
       @Html.AntiForgeryToken()
-      <button type="submit" class="btn btn-link sidebar-link">
+      <button type="submit" class="btn btn-link sidebar-link" style="height: 50px; width: 260px;">
         <div class="sidebar-icon"><i class="bi bi-box-arrow-right"></i></div>
         <span class="sidebar-text">Salir</span>
       </button>

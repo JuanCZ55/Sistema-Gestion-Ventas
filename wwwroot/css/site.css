@@ -1,12 +1,12 @@
 /* --- Variables CSS para configuración fácil --- */
 :root {
   --sidebar-width-compact: 70px;
-  --sidebar-width-expanded: 240px;
+  --sidebar-width-expanded: 260px;
   --sidebar-bg: #2c3e50;
   --sidebar-color: #ecf0f1;
   --sidebar-hover-bg: #34495e;
   --main-bg: #f8f9fa;
-  --navbar-height: 60px;
+  --navbar-height: 58.5px;
 }
 
 body {
@@ -34,6 +34,7 @@ body {
     width: 0;
     background: transparent;
   }
+  font-weight: bold;
 }
 
 .sidebar::-webkit-scrollbar {
@@ -52,6 +53,7 @@ body {
   padding: 12px 0;
   transition: background 0.2s;
   cursor: pointer;
+  height: var(--navbar-height);
 }
 
 .sidebar-link:hover {
@@ -86,13 +88,12 @@ body {
 
 .sidebar-content {
   flex-grow: 1;
-  padding-top: 1rem;
   overflow-y: auto;
 }
 
 .sidebar-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 1rem;
+  padding: auto;
 }
 
 /* --- Wrapper Principal --- */
@@ -121,4 +122,9 @@ body {
 /* Ajuste para Tom Select */
 .ts-wrapper {
   width: 600px;
+}
+
+/* Logout button hover */
+.btn-link:hover {
+  color: rgb(231, 36, 36) !important;
 }

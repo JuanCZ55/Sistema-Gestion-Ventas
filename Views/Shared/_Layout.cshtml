@@ -13,9 +13,9 @@
 </head>
 
 <body>
-  @Html.Partial("_Sidebar")
+  <partial name="_Sidebar" />
   <div class="main-wrapper">
-    @Html.Partial("_Navbar")
+    <partial name="_Navbar" />
     <main class="dynamic-content">
       @RenderBody()
     </main>
