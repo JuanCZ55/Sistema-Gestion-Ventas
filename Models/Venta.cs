@@ -15,7 +15,7 @@ namespace SistemaGestionVentas.Models
         public decimal Total { get; set; }
 
         [Required]
-        public int Estado { get; set; } = 1; // 1=Completada, 2=Anulada
+        public bool Estado { get; set; } = true; // true=Completada, false=Anulada
 
         public string? MotivoAnulacion { get; set; }
 

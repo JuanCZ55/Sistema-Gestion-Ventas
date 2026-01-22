@@ -37,7 +37,6 @@ namespace SistemaGestionVentas.Models
         public int Rol { get; set; } // 1-admin 2-Empleado
 
         [Required(ErrorMessage = "El estado es obligatorio")]
-        [Range(1, 2, ErrorMessage = "El estado debe ser 1 (Activo) o 2 (Inactivo)")]
-        public int Estado { get; set; } = 1; // 1=Activo, 2=Inactivo
+        public bool Estado { get; set; } = true; // true=Activo, false=Inactivo
     }
 }

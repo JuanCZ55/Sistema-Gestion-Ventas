@@ -9,7 +9,7 @@ namespace SistemaGestionVentas.Models
         [Required(ErrorMessage = "Ingrese el nombre de la categoría")]
         public string Nombre { get; set; } = ""!;
 
-        public int Estado { get; set; } = 1; // 1=Activo, 2=Inactivo
+        public bool Estado { get; set; } = true; // true=Activo, false=Inactivo
         public List<Producto> Productos { get; set; } = new List<Producto>();
     }
 }

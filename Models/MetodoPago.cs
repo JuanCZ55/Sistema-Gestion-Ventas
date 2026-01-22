@@ -10,6 +10,6 @@ namespace SistemaGestionVentas.Models
         public string Nombre { get; set; } = null!;
 
         [Required(ErrorMessage = "Ingrese el estado del método de pago")]
-        public int Estado { get; set; } = 1; // 1: Activo, 2: Inactivo
+        public bool Estado { get; set; } = true; // true=Activo, false=Inactivo
     }
 }

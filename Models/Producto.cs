@@ -37,7 +37,7 @@ namespace SistemaGestionVentas.Models
         public IFormFile? Fimagen { get; set; }
 
         [Required]
-        public int Estado { get; set; } = 1; // 1=Activo, 2=Inactivo
+        public bool Estado { get; set; } = true; // true=Activo, false=Inactivo
 
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

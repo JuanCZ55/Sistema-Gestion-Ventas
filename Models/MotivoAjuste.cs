@@ -12,6 +12,6 @@ namespace SistemaGestionVentas.Models
         public string? Descripcion { get; set; }
 
         [Required(ErrorMessage = "Ingrese el estado del motivo de ajuste")]
-        public int Estado { get; set; } = 1; //1=Activo, 2=Inactivo
+        public bool Estado { get; set; } = true; // true=Activo, false=Inactivo
     }
 }

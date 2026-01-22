@@ -29,7 +29,7 @@ namespace SistemaGestionVentas.Controllers.Api
             var productos = await _context
                 .Producto.AsNoTracking()
                 .Where(p =>
-                    p.Estado == 1
+                    p.Estado == true
                     && (
                         EF.Functions.Like(p.Codigo, $"%{q}%")
                         || EF.Functions.Like(p.Nombre, $"%{q}%")
