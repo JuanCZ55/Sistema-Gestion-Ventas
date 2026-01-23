@@ -31,7 +31,11 @@ namespace SistemaGestionVentas.Controllers.Api
             {
                 return StatusCode(
                     500,
-                    new { success = false, message = "Error interno del servidor" }
+                    new
+                    {
+                        success = false,
+                        message = "Error interno del servidor al obtener métodos de pago",
+                    }
                 );
             }
         }
@@ -61,7 +65,11 @@ namespace SistemaGestionVentas.Controllers.Api
             {
                 return StatusCode(
                     500,
-                    new { success = false, message = "Error interno del servidor" }
+                    new
+                    {
+                        success = false,
+                        message = "Error interno del servidor al crear método de pago",
+                    }
                 );
             }
         }
@@ -97,7 +105,11 @@ namespace SistemaGestionVentas.Controllers.Api
             {
                 return StatusCode(
                     500,
-                    new { success = false, message = "Error interno del servidor" }
+                    new
+                    {
+                        success = false,
+                        message = "Error interno del servidor al actualizar método de pago",
+                    }
                 );
             }
         }
@@ -128,7 +140,11 @@ namespace SistemaGestionVentas.Controllers.Api
             {
                 return StatusCode(
                     500,
-                    new { success = false, message = "Error interno del servidor" }
+                    new
+                    {
+                        success = false,
+                        message = "Error interno del servidor al eliminar método de pago",
+                    }
                 );
             }
         }
@@ -148,7 +164,11 @@ namespace SistemaGestionVentas.Controllers.Api
             {
                 return StatusCode(
                     500,
-                    new { success = false, message = "Error interno del servidor" }
+                    new
+                    {
+                        success = false,
+                        message = "Error interno del servidor al obtener método de pago por ID",
+                    }
                 );
             }
         }
