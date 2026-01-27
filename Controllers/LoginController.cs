@@ -19,14 +19,15 @@ namespace SistemaGestionVentas.Controllers
             _jwtService = jwtService;
         }
 
-        [HttpGet]
-        public IActionResult Index()
+        [HttpGet("login")]
+        public IActionResult Index(string returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Index(LoginViewModel model)
+        [HttpPost("login")]
+        public async Task<IActionResult> Index(LoginViewModel model, string returnUrl)
         {
             if (!ModelState.IsValid)
             {
@@ -74,10 +75,14 @@ namespace SistemaGestionVentas.Controllers
             );
             TempData["ToastType"] = "success";
             TempData["ToastMessage"] = "Inicio de sesion exitoso.";
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
             return RedirectToAction("Index", "Home");
         }
 
-        [HttpPost]
+        [HttpPost("login/logout")]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
