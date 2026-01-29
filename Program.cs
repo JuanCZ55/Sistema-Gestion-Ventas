@@ -50,8 +50,8 @@ builder
     })
     .AddCookie(options =>
     {
-        options.LoginPath = "/login";
-        options.LogoutPath = "/login/Logout";
+        options.LoginPath = "/Login";
+        options.LogoutPath = "/Login/Logout";
         //options.AccessDeniedPath = "/login/Denegado";
     })
     .AddJwtBearer(options =>

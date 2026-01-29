@@ -20,13 +20,13 @@ namespace SistemaGestionVentas.Controllers
         }
 
         [HttpGet("login")]
-        public IActionResult Index(string returnUrl = null)
+        public IActionResult Index(string returnUrl = "")
         {
             ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
 
-        [HttpPost("login")]
+        [HttpPost]
         public async Task<IActionResult> Index(LoginViewModel model, string returnUrl)
         {
             if (!ModelState.IsValid)
@@ -82,7 +82,7 @@ namespace SistemaGestionVentas.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        [HttpPost("login/logout")]
+        [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
