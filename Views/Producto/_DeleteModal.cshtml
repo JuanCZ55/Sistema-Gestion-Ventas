@@ -1,0 +1,54 @@
+@* Views/Producto/_DeleteModal.cshtml *@
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteModalLabel">Confirmar Cambio de Estado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="deleteForm" action="/Producto/Estado" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="delete_Id" />
+        <div class="modal-body">
+          <p>¿Estás seguro de que deseas cambiar el estado de este producto?</p>
+          <div id="deleteProductInfo" class="row">
+            <div class="col-md-4">
+              <div id="deleteImageContainer" class="text-center">
+                <!-- Imagen del producto se cargará aquí -->
+              </div>
+            </div>
+            <div class="col-md-8">
+              <dl class="row">
+                <dt class="col-sm-4">Código:</dt>
+                <dd class="col-sm-8" id="delete_Codigo"></dd>
+                <dt class="col-sm-4">Nombre:</dt>
+                <dd class="col-sm-8" id="delete_Nombre"></dd>
+                <dt class="col-sm-4">Precio Costo:</dt>
+                <dd class="col-sm-8" id="delete_PrecioCosto"></dd>
+                <dt class="col-sm-4">Precio Venta:</dt>
+                <dd class="col-sm-8" id="delete_PrecioVenta"></dd>
+                <dt class="col-sm-4">Stock:</dt>
+                <dd class="col-sm-8" id="delete_Stock"></dd>
+                <dt class="col-sm-4">Pesable:</dt>
+                <dd class="col-sm-8" id="delete_Pesable"></dd>
+                <dt class="col-sm-4">Estado Actual:</dt>
+                <dd class="col-sm-8" id="delete_EstadoActual"></dd>
+                <dt class="col-sm-4">Categoría:</dt>
+                <dd class="col-sm-8" id="delete_Categoria"></dd>
+                <dt class="col-sm-4">Proveedor:</dt>
+                <dd class="col-sm-8" id="delete_Proveedor"></dd>
+              </dl>
+            </div>
+          </div>
+          <p class="" id="deleteText">Esto lo marcará como <strong><span id="estadoText"></span></strong>.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn" id="deleteButton">Cambiar Estado</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

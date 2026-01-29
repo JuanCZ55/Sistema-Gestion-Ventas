@@ -128,3 +128,39 @@ body {
 .btn-link:hover {
   color: rgb(231, 36, 36) !important;
 }
+
+/* --- Estilos para el componente de imagen --- */
+/* Contenedor de la vista previa de imagen: tamaño fijo, centrado, con borde */
+.image-preview-container {
+  position: relative;
+  width: 375px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #e3e3e3;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Imagen dentro del contenedor: ajusta al 100% con object-fit para preservar aspecto */
+.image-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Botón de cerrar: posicionado absolutamente en la esquina superior derecha */
+.image-preview-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 5;
+}
+
+/* Input de archivo: mismo ancho que la preview */
+.image-input {
+  width: 375px;
+}

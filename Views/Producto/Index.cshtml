@@ -1,87 +1,53 @@
 ﻿@model IEnumerable<SistemaGestionVentas.Models.Producto>
 
 @{
-  ViewData["Title"] = "Index";
+  ViewData["Title"] = "Productos";
 }
 
-<h1>Index</h1>
+<h1>Productos</h1>
 
 <p>
-  <a asp-action="Create">Create New</a>
+  <button type="button" class="btn btn-primary" onclick="openCreateModal()">Crear Nuevo</button>
 </p>
+
 <table class="table">
   <thead>
     <tr>
-      <th>
-        @Html.DisplayNameFor(model => model.Codigo)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.Nombre)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.PrecioCosto)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.PrecioVenta)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.Stock)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.Pesable)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.Imagen)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.Estado)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.Categoria)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.Proveedor)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.UsuarioCreador)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.UsuarioModificador)
-      </th>
-      <th></th>
+      <th>@Html.DisplayNameFor(model => model.Codigo)</th>
+      <th>@Html.DisplayNameFor(model => model.Nombre)</th>
+      <th>@Html.DisplayNameFor(model => model.PrecioCosto)</th>
+      <th>@Html.DisplayNameFor(model => model.PrecioVenta)</th>
+      <th>@Html.DisplayNameFor(model => model.Stock)</th>
+      <th>@Html.DisplayNameFor(model => model.Pesable)</th>
+      @* <th>@Html.DisplayNameFor(model => model.Imagen)</th> *@
+      <th>@Html.DisplayNameFor(model => model.Estado)</th>
+      <th>@Html.DisplayNameFor(model => model.Categoria)</th>
+      <th>@Html.DisplayNameFor(model => model.Proveedor)</th>
+      <th>Acciones</th>
     </tr>
   </thead>
   <tbody>
     @foreach (var item in Model)
     {
       <tr>
-        <td>
-          @Html.DisplayFor(modelItem => item.Codigo)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.Nombre)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.PrecioCosto)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.PrecioVenta)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.Stock)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.Pesable)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.Imagen)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.Estado)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.Categoria.Nombre)
-        </td>
+        <td>@Html.DisplayFor(modelItem => item.Codigo)</td>
+        <td>@Html.DisplayFor(modelItem => item.Nombre)</td>
+        <td>@Html.DisplayFor(modelItem => item.PrecioCosto)</td>
+        <td>@Html.DisplayFor(modelItem => item.PrecioVenta)</td>
+        <td>@Html.DisplayFor(modelItem => item.Stock)</td>
+        <td>@Html.DisplayFor(modelItem => item.Pesable)</td>
+        @* <td>
+          @if (!string.IsNullOrEmpty(item.Imagen))
+          {
+            <img src="@item.Imagen" alt="Imagen" style="max-width: 100px;" />
+          }
+          else
+          {
+            <span>Sin imagen</span>
+          }
+        </td> *@
+        <td>@Html.DisplayFor(modelItem => item.Estado)</td>
+        <td>@Html.DisplayFor(modelItem => item.Categoria!.Nombre)</td>
         <td>
           @if (item.Proveedor != null)
           {
@@ -93,24 +59,110 @@
           }
         </td>
         <td>
-          @Html.DisplayFor(modelItem => item.UsuarioCreador.Apellido)
-        </td>
-        <td>
-          @if (item.UsuarioModificador != null)
+          <button type="button" class="btn btn-sm btn-warning edit-btn" onclick="openEditModal(@item.Id)">Editar</button>
+          @if (item.Estado)
           {
-            @item.UsuarioModificador.Apellido
+
+            <button type="button" class="btn btn-sm btn-danger delete-btn" data-id="@item.Id"
+              data-estado="@item.Estado">Desactivar</button>
           }
           else
           {
-            <span>N/A</span>
+            <button type="button" class="btn btn-sm btn-success delete-btn" data-id="@item.Id"
+              data-estado="@item.Estado">Activar</button>
           }
-        </td>
-        <td>
-          <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-          <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-          <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+
         </td>
       </tr>
     }
   </tbody>
 </table>
+
+<partial name="_CreateModal" />
+<partial name="_EditModal" />
+<partial name="_DeleteModal" />
+
+@section Scripts {
+  <script>
+    $(document).ready(function () {
+      // Los selects ya se cargan del lado servidor
+
+      // Inicializar uploaders UNA SOLA VEZ
+      initImageUploader('create');
+      initImageUploader('edit');
+
+      // Abrir modal para create
+      window.openCreateModal = function () {
+        $('#createForm')[0].reset();
+        $('#create_Estado').prop('checked', true);
+        if (window.clearPreview_create) window.clearPreview_create();
+        const modal = new bootstrap.Modal(document.getElementById('createModal'));
+        modal.show();
+      };
+
+      // Abrir modal para edit
+      window.openEditModal = function (id) {
+        if (window.clearPreview_edit) window.clearPreview_edit();
+        loadData(id);
+        const modal = new bootstrap.Modal(document.getElementById('editModal'));
+        modal.show();
+      };
+
+      function loadData(id) {
+        $.get('/Producto/Details/' + id, function (data) {
+          $('#edit_Id').val(data.id);
+          $('#edit_Codigo').val(data.codigo);
+          $('#edit_Nombre').val(data.nombre);
+          $('#edit_PrecioCosto').val(data.precioCosto);
+          $('#edit_PrecioVenta').val(data.precioVenta);
+          $('#edit_Stock').val(data.stock);
+          $('#edit_Pesable').prop('checked', data.pesable);
+          $('#edit_Estado').prop('checked', data.estado);
+          $('#edit_CategoriaId').val(data.categoriaId);
+          $('#edit_ProveedorId').val(data.proveedorId);
+          // Usar la API del uploader para setear imagen existente
+          if (typeof setEditImage === 'function') {
+            setEditImage(data.imagen);
+          }
+        });
+      }
+
+      // Delete modal
+      $('.delete-btn').on('click', function () {
+        var id = $(this).data('id');
+        var estado = $(this).data('estado');
+        $.get('/Producto/Details/' + id, function (data) {
+          // Poblar imagen
+          if (data.imagen) {
+            $('#deleteImageContainer').html('<img src="' + data.imagen + '" class="img-fluid rounded" style="max-width: 150px; max-height: 150px;" alt="Imagen del producto" />');
+          } else {
+            $('#deleteImageContainer').html('<div class="text-muted">Sin imagen</div>');
+          }
+
+          // Poblar campos de información
+          $('#delete_Codigo').text(data.codigo);
+          $('#delete_Nombre').text(data.nombre);
+          $('#delete_PrecioCosto').text('$' + parseFloat(data.precioCosto).toFixed(2));
+          $('#delete_PrecioVenta').text('$' + parseFloat(data.precioVenta).toFixed(2));
+          $('#delete_Stock').text(parseFloat(data.stock).toFixed(3));
+          $('#delete_Pesable').text(data.pesable ? 'Sí' : 'No');
+          $('#delete_EstadoActual').text(data.estado ? 'Activo' : 'Inactivo');
+          $('#delete_Categoria').text(data.categoriaNombre || 'N/A');
+          $('#delete_Proveedor').text(data.proveedorNombre || 'N/A');
+          $('#deleteButton').addClass(data.estado ? 'btn-danger' : 'btn-success');
+
+          $('#deleteText').addClass(data.estado ? 'text-danger' : 'text-success');
+
+          $('#estadoText').text(data.estado ? 'Inactivo' : 'Activo');
+          $('#deleteButton').addClass(data.estado ? 'btn-danger' : 'btn-success');
+          $('#deleteButton').text(data.estado ? 'Desactivar' : 'Activar');
+
+          $('#delete_Id').val(id);
+          const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+          modal.show();
+        });
+      });
+
+    });
+  </script>
+}
