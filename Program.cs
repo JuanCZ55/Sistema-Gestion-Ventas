@@ -33,6 +33,9 @@ builder.Services.AddSingleton<SupabaseStorageService>();
 
 builder.Services.AddSingleton<JwtService>();
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserService, UserService>();
+
 // Configuración de JWT
 var jwtSettings = builder.Configuration.GetSection("TokenAuthentication");
 var secretKeyString = jwtSettings["SecretKey"];
