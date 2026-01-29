@@ -23,8 +23,6 @@ namespace SistemaGestionVentas.Models
         [Column(TypeName = "decimal(10,2)")]
         public decimal PrecioVenta { get; set; }
 
-        [Required(ErrorMessage = "Ingrese el stock")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "El stock debe ser mayor a cero")]
         [Column(TypeName = "decimal(10,3)")]
         public decimal Stock { get; set; }
 
@@ -39,7 +37,7 @@ namespace SistemaGestionVentas.Models
         [Required]
         public bool Estado { get; set; } = true; // true=Activo, false=Inactivo
 
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
         // --- Relaciones ---
@@ -47,17 +45,17 @@ namespace SistemaGestionVentas.Models
         public int CategoriaId { get; set; }
 
         [ForeignKey("CategoriaId")]
-        public Categoria Categoria { get; set; } = null!;
+        public Categoria? Categoria { get; set; } = null!;
 
         public int? ProveedorId { get; set; }
 
         [ForeignKey("ProveedorId")]
         public Proveedor? Proveedor { get; set; }
 
-        public int UsuarioCreadorId { get; set; }
+        public int? UsuarioCreadorId { get; set; }
 
         [ForeignKey("UsuarioCreadorId")]
-        public Usuario UsuarioCreador { get; set; } = null!;
+        public Usuario? UsuarioCreador { get; set; }
 
         public int? UsuarioModificadorId { get; set; }
 
