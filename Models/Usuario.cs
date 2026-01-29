@@ -24,8 +24,7 @@ namespace SistemaGestionVentas.Models
         [EmailAddress(ErrorMessage = "El email no es válido")]
         public string Email { get; set; } = null!;
 
-        [Required(ErrorMessage = "La contraseña es obligatoria")]
-        public string Pass { get; set; } = null!;
+        public string? Pass { get; set; } = null!;
 
         public string? Avatar { get; set; }
 

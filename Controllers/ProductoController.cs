@@ -31,77 +31,79 @@ namespace SistemaGestionVentas.Controllers
         [HttpGet("/Producto")]
         public async Task<IActionResult> Index()
         {
-            ViewData["CategoriaId"] = new SelectList(
-                _context.Categoria.Where(c => c.Estado),
-                "Id",
-                "Nombre"
-            );
-            ViewData["ProveedorId"] = new SelectList(
-                _context.Proveedor.Where(p => p.Estado),
-                "Id",
-                "NombreContacto"
-            );
-            var context = _context
-                .Producto.Include(p => p.Categoria)
-                .Include(p => p.Proveedor)
-                .Include(p => p.UsuarioCreador)
-                .Include(p => p.UsuarioModificador);
+            try
+            {
+                ViewData["CategoriaId"] = new SelectList(
+                    _context.Categoria.Where(c => c.Estado),
+                    "Id",
+                    "Nombre"
+                );
+                ViewData["ProveedorId"] = new SelectList(
+                    _context.Proveedor.Where(p => p.Estado),
+                    "Id",
+                    "NombreContacto"
+                );
+                var context = _context
+                    .Producto.Include(p => p.Categoria)
+                    .Include(p => p.Proveedor)
+                    .Include(p => p.UsuarioCreador)
+                    .Include(p => p.UsuarioModificador);
 
-            return View(await context.ToListAsync());
+                return View(await context.ToListAsync());
+            }
+            catch (Exception e)
+            {
+                Notify("Error al cargar los productos: " + e.Message, "danger");
+                return RedirectToAction("Index", "Home");
+            }
         }
 
         // GET: Producto/Details/5
         public async Task<IActionResult> Details(int id = 0)
         {
-            if (id == 0)
-                return NotFound();
+            try
+            {
+                if (id == 0)
+                    return NotFound();
 
-            var producto = await _context
-                .Producto.Where(p => p.Id == id)
-                .Select(p => new
-                {
-                    p.Id,
-                    p.Codigo,
-                    p.Nombre,
-                    p.PrecioCosto,
-                    p.PrecioVenta,
-                    p.Stock,
-                    p.Pesable,
-                    p.Imagen,
-                    p.Estado,
-                    CategoriaId = p.CategoriaId,
-                    CategoriaNombre = p.Categoria != null && p.Categoria.Nombre != null
-                        ? p.Categoria.Nombre
-                        : "N/A",
-                    ProveedorId = p.ProveedorId,
-                    ProveedorNombre = p.Proveedor != null ? p.Proveedor.NombreContacto : null,
-                    UsuarioCreador = new { p.UsuarioCreador!.Id, p.UsuarioCreador.Nombre },
-                    UsuarioModificador = p.UsuarioModificador == null
-                        ? null
-                        : new { p.UsuarioModificador.Id, p.UsuarioModificador.Nombre },
-                })
-                .FirstOrDefaultAsync();
+                var producto = await _context
+                    .Producto.Where(p => p.Id == id)
+                    .Select(p => new
+                    {
+                        p.Id,
+                        p.Codigo,
+                        p.Nombre,
+                        p.PrecioCosto,
+                        p.PrecioVenta,
+                        p.Stock,
+                        p.Pesable,
+                        p.Imagen,
+                        p.Estado,
+                        CategoriaId = p.CategoriaId,
+                        CategoriaNombre = p.Categoria != null && p.Categoria.Nombre != null
+                            ? p.Categoria.Nombre
+                            : "N/A",
+                        ProveedorId = p.ProveedorId,
+                        ProveedorNombre = p.Proveedor != null ? p.Proveedor.NombreContacto : null,
+                        UsuarioCreador = new { p.UsuarioCreador!.Id, p.UsuarioCreador.Nombre },
+                        UsuarioModificador = p.UsuarioModificador == null
+                            ? null
+                            : new { p.UsuarioModificador.Id, p.UsuarioModificador.Nombre },
+                    })
+                    .FirstOrDefaultAsync();
 
-            if (producto == null)
-                return NotFound();
+                if (producto == null)
+                    return NotFound();
 
-            return Json(producto);
-        }
-
-        [HttpGet]
-        public IActionResult Create()
-        {
-            ViewData["CategoriaId"] = new SelectList(
-                _context.Categoria.Where(c => c.Estado),
-                "Id",
-                "Nombre"
-            );
-            ViewData["ProveedorId"] = new SelectList(
-                _context.Proveedor.Where(p => p.Estado),
-                "Id",
-                "NombreContacto"
-            );
-            return View();
+                return Json(producto);
+            }
+            catch (Exception e)
+            {
+                return StatusCode(
+                    500,
+                    new { error = "Error al obtener detalles del producto: " + e.Message }
+                );
+            }
         }
 
         // POST: Producto/Create
@@ -114,14 +116,11 @@ namespace SistemaGestionVentas.Controllers
         {
             if (!ModelState.IsValid)
             {
-                Notify(
-                    "Verifique los datos: "
-                        + string.Join(
-                            ", ",
-                            ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
-                        ),
-                    "danger"
+                var msj = string.Join(
+                    "\n",
+                    ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
                 );
+                Notify("Verifique los datos: " + msj, "danger");
                 return RedirectToAction(nameof(Index));
             }
             var nombreNormalizado = producto.Nombre.Trim().ToLower();
@@ -288,25 +287,33 @@ namespace SistemaGestionVentas.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Estado(int id)
         {
-            var producto = await _context.Producto.FindAsync(id);
-            if (producto == null)
+            try
             {
-                Notify("Producto no encontrado", "danger");
+                var producto = await _context.Producto.FindAsync(id);
+                if (producto == null)
+                {
+                    Notify("Producto no encontrado", "danger");
+                    return RedirectToAction(nameof(Index));
+                }
+
+                producto.Estado = !producto.Estado;
+                if (producto.Estado)
+                {
+                    Notify("Producto activado correctamente.");
+                }
+                else
+                {
+                    Notify("Producto desactivado correctamente.");
+                }
+                await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
-
-            producto.Estado = !producto.Estado;
-            if (producto.Estado)
+            catch (Exception e)
             {
-                Notify("Producto activado correctamente.");
+                Notify("Error al cambiar el estado del producto: " + e.Message, "danger");
+                return RedirectToAction(nameof(Index));
             }
-            else
-            {
-                Notify("Producto desactivado correctamente.");
-            }
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction(nameof(Index));
         }
     }
 }
