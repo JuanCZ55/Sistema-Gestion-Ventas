@@ -7,6 +7,7 @@ using SistemaGestionVentas.Services;
 
 namespace SistemaGestionVentas.Controllers
 {
+    [Authorize(Policy = "Admin")]
     public class VentaController : Controller
     {
         private readonly Context _context;

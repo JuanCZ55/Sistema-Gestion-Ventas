@@ -28,16 +28,62 @@ namespace SistemaGestionVentas.Controllers
         // GET: Usuario
         [Authorize(Policy = "Admin")]
         [HttpGet("Usuario")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int pageNumber = 1, string? search = null)
         {
             try
             {
-                return View(await _context.Usuario.ToListAsync());
+                int pageSize = 10;
+                IQueryable<Usuario> query = _context.Usuario;
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    query = query.Where(u =>
+                        u.DNI.Contains(search)
+                        || u.Nombre.Contains(search)
+                        || u.Apellido.Contains(search)
+                        || u.Email.Contains(search)
+                    );
+                }
+
+                var totalItems = await query.CountAsync();
+
+                var items = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                return View(
+                    new
+                    {
+                        Items = items,
+                        TotalItems = totalItems,
+                        PageNumber = pageNumber,
+                        PageSize = pageSize,
+                        Search = search,
+                    }
+                );
             }
             catch (Exception e)
             {
                 Notify("Error al cargar los usuarios: " + e.Message, "danger");
-                return RedirectToAction("Index", "Home");
+                // En caso de error, devolver lista sin filtros aplicados
+                var querySinFiltros = _context.Usuario;
+                var totalItems = await querySinFiltros.CountAsync();
+                var items = await querySinFiltros
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                return View(
+                    new
+                    {
+                        Items = items,
+                        TotalItems = totalItems,
+                        PageNumber = pageNumber,
+                        PageSize = pageSize,
+                        Search = (string?)null,
+                    }
+                );
             }
         }
 
@@ -98,7 +144,11 @@ namespace SistemaGestionVentas.Controllers
                 Notify("Verifique los datos: " + msj, "danger");
                 return RedirectToAction(nameof(Index));
             }
-
+            if (string.IsNullOrEmpty(usuario.Pass))
+            {
+                Notify("La contraseña es obligatoria", "danger");
+                return RedirectToAction(nameof(Index));
+            }
             // Validar duplicados por DNI o Email
             var duplicado = await _context.Usuario.FirstOrDefaultAsync(u =>
                 u.DNI == usuario.DNI || u.Email == usuario.Email

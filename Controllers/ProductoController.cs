@@ -284,6 +284,7 @@ namespace SistemaGestionVentas.Controllers
 
         // POST: Producto/Estado/5
         [HttpPost]
+        [Authorize(Policy = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Estado(int id)
         {

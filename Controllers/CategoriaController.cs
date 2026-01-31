@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using SistemaGestionVentas.Models;
 
 namespace SistemaGestionVentas.Controllers
 {
+    [Authorize(Policy = "Vendedor")]
     public class CategoriaController : BaseController
     {
         private readonly Context _context;
@@ -187,6 +189,7 @@ namespace SistemaGestionVentas.Controllers
 
         // POST: Categoria/Estado/5
         [HttpPost]
+        [Authorize(Policy = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Estado(int id)
         {

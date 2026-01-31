@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ using SistemaGestionVentas.Services;
 
 namespace SistemaGestionVentas.Controllers
 {
+    [Authorize(Policy = "Vendedor")]
     public class AjusteStockController : BaseController
     {
         private readonly Context _context;
@@ -140,6 +142,7 @@ namespace SistemaGestionVentas.Controllers
 
         // POST: AjusteStock/Create
         [HttpPost]
+        [Authorize(Policy = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
             [Bind("TipoMovimiento,Nota,VentaId,MotivoAjusteId")] AjusteStock ajusteStock,
