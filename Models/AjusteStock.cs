@@ -11,6 +11,7 @@ namespace SistemaGestionVentas.Models
         public DateTime Fecha { get; set; } = DateTime.Now;
 
         [Required(ErrorMessage = "Eliga el tipo de movimiento")]
+        [Range(1, 2, ErrorMessage = "Tipo de movimiento inválido")]
         public int TipoMovimiento { get; set; } //1:Alta , 2:Baja
 
         public string? Nota { get; set; }

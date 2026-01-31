@@ -3,16 +3,19 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SistemaGestionVentas.Data;
 using SistemaGestionVentas.Models;
+using SistemaGestionVentas.Services;
 
 namespace SistemaGestionVentas.Controllers
 {
     public class VentaController : Controller
     {
         private readonly Context _context;
+        private readonly IUserService _userService;
 
-        public VentaController(Context context)
+        public VentaController(Context context, IUserService userService)
         {
             _context = context;
+            _userService = userService;
         }
 
         // GET: Ventas
@@ -50,8 +53,6 @@ namespace SistemaGestionVentas.Controllers
         public IActionResult Create()
         {
             ViewData["MetodoPagoId"] = new SelectList(_context.MetodoPago, "Id", "Nombre");
-            ViewData["UsuarioCreadorId"] = new SelectList(_context.Usuario, "Id", "Apellido");
-            ViewData["UsuarioModificadorId"] = new SelectList(_context.Usuario, "Id", "Apellido");
             return View();
         }
 
@@ -61,14 +62,12 @@ namespace SistemaGestionVentas.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
-            [Bind(
-                "Id,Fecha,Total,Estado,MotivoAnulacion,MetodoPagoId,UsuarioCreadorId,UsuarioModificadorId"
-            )]
-                Venta venta
+            [Bind("Id,Fecha,Total,Estado,MotivoAnulacion,MetodoPagoId")] Venta venta
         )
         {
             if (ModelState.IsValid)
             {
+                venta.UsuarioCreadorId = _userService.GetCurrentUserId();
                 _context.Add(venta);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -78,18 +77,6 @@ namespace SistemaGestionVentas.Controllers
                 "Id",
                 "Nombre",
                 venta.MetodoPagoId
-            );
-            ViewData["UsuarioCreadorId"] = new SelectList(
-                _context.Usuario,
-                "Id",
-                "Apellido",
-                venta.UsuarioCreadorId
-            );
-            ViewData["UsuarioModificadorId"] = new SelectList(
-                _context.Usuario,
-                "Id",
-                "Apellido",
-                venta.UsuarioModificadorId
             );
             return View(venta);
         }
@@ -113,18 +100,6 @@ namespace SistemaGestionVentas.Controllers
                 "Nombre",
                 venta.MetodoPagoId
             );
-            ViewData["UsuarioCreadorId"] = new SelectList(
-                _context.Usuario,
-                "Id",
-                "Apellido",
-                venta.UsuarioCreadorId
-            );
-            ViewData["UsuarioModificadorId"] = new SelectList(
-                _context.Usuario,
-                "Id",
-                "Apellido",
-                venta.UsuarioModificadorId
-            );
             return View(venta);
         }
 
@@ -135,10 +110,7 @@ namespace SistemaGestionVentas.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
             int id,
-            [Bind(
-                "Id,Fecha,Total,Estado,MotivoAnulacion,MetodoPagoId,UsuarioCreadorId,UsuarioModificadorId"
-            )]
-                Venta venta
+            [Bind("Id,Fecha,Total,Estado,MotivoAnulacion,MetodoPagoId")] Venta venta
         )
         {
             if (id != venta.Id)
@@ -150,6 +122,7 @@ namespace SistemaGestionVentas.Controllers
             {
                 try
                 {
+                    venta.UsuarioModificadorId = _userService.GetCurrentUserId();
                     _context.Update(venta);
                     await _context.SaveChangesAsync();
                 }
@@ -171,18 +144,6 @@ namespace SistemaGestionVentas.Controllers
                 "Id",
                 "Nombre",
                 venta.MetodoPagoId
-            );
-            ViewData["UsuarioCreadorId"] = new SelectList(
-                _context.Usuario,
-                "Id",
-                "Apellido",
-                venta.UsuarioCreadorId
-            );
-            ViewData["UsuarioModificadorId"] = new SelectList(
-                _context.Usuario,
-                "Id",
-                "Apellido",
-                venta.UsuarioModificadorId
             );
             return View(venta);
         }

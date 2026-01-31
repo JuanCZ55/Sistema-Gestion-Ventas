@@ -22,37 +22,45 @@ namespace SistemaGestionVentas.Controllers
         // GET: Categoria
         public async Task<IActionResult> Index(string nombre, bool? estado, int page = 1)
         {
-            const int pageSize = 10;
-            IQueryable<Categoria> query = _context.Categoria;
-
-            if (!string.IsNullOrEmpty(nombre))
+            try
             {
-                var nombreNormalizado = nombre.Trim().ToLower();
-                query = query.Where(c => c.Nombre.Contains(nombreNormalizado));
-            }
+                const int pageSize = 10;
+                IQueryable<Categoria> query = _context.Categoria;
 
-            if (estado.HasValue)
-            {
-                query = query.Where(c => c.Estado == estado.Value);
-            }
-
-            query = query.OrderBy(c => c.Id);
-
-            int total = await query.CountAsync();
-
-            var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-
-            return View(
-                new
+                if (!string.IsNullOrEmpty(nombre))
                 {
-                    Total = total,
-                    Page = page,
-                    PageSize = pageSize,
-                    Items = data,
-                    Nombre = nombre,
-                    Estado = estado,
+                    var nombreNormalizado = nombre.Trim().ToLower();
+                    query = query.Where(c => c.Nombre.Contains(nombreNormalizado));
                 }
-            );
+
+                if (estado.HasValue)
+                {
+                    query = query.Where(c => c.Estado == estado.Value);
+                }
+
+                query = query.OrderBy(c => c.Id);
+
+                int total = await query.CountAsync();
+
+                var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+                return View(
+                    new
+                    {
+                        Total = total,
+                        Page = page,
+                        PageSize = pageSize,
+                        Items = data,
+                        Nombre = nombre,
+                        Estado = estado,
+                    }
+                );
+            }
+            catch (System.Exception)
+            {
+                Notify("Error al cargar las categorias", "danger");
+                return View();
+            }
         }
 
         // GET: Categoria/Details/5
