@@ -21,9 +21,9 @@ namespace SistemaGestionVentas.Controllers.Api
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string q)
         {
-            if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+            if (string.IsNullOrWhiteSpace(q) || q.Length < 1)
             {
-                return BadRequest("El parámetro 'q' debe tener al menos 2 caracteres.");
+                return BadRequest("El parámetro 'q' debe tener al menos 1 caracter.");
             }
 
             var productos = await _context
@@ -58,7 +58,7 @@ namespace SistemaGestionVentas.Controllers.Api
 
             var producto = await _context
                 .Producto.AsNoTracking()
-                .Where(p => p.Id == id)
+                .Where(p => p.Id == id && p.Estado == true)
                 .Select(p => new
                 {
                     p.Id,

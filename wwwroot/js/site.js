@@ -9,11 +9,19 @@ document.addEventListener("DOMContentLoaded", function () {
     valueField: "id",
     labelField: "nombre",
     searchField: ["codigo", "nombre"],
+    persist: false,
+    cache: false,
     load: function (query, callback) {
+      if (query.length < 1) return callback([]);
       fetch(`/api/productos/search?q=${encodeURIComponent(query)}`)
         .then((r) => r.json())
         .then((data) => callback(data))
         .catch(() => callback());
+    },
+    onType: function (str) {
+      if (str === '') {
+        this.clearOptions();
+      }
     },
     onChange: function (id) {
       if (!id) return;

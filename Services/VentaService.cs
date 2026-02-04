@@ -32,7 +32,7 @@ namespace SistemaGestionVentas.Services
                 return new Result
                 {
                     IsSuccess = false,
-                    ErrorMessage = "La venta debe tener al menos un detalle.",
+                    ErrorMessage = "La venta debe tener al menos un producto",
                 };
             }
 
@@ -43,9 +43,9 @@ namespace SistemaGestionVentas.Services
                 var ajuste = new AjusteStock
                 {
                     Fecha = DateTime.Now,
-                    TipoMovimiento = 2, // Baja por venta
+                    TipoMovimiento = 2,
                     UsuarioId = usuarioId,
-                    MotivoAjusteId = 1, // Asumir ID para "Venta" (ajustar si necesario)
+                    MotivoAjusteId = 1,
                 };
                 _context.AjusteStock.Add(ajuste);
 

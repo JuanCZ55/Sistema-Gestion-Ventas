@@ -9,8 +9,8 @@ namespace SistemaGestionVentas.Models
 
         public DateTime Fecha { get; set; } = DateTime.UtcNow;
 
-    [Column(TypeName = "decimal(10,2)")]
-    public decimal Total { get; set; } = 0;
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal Total { get; set; } = 0;
 
         public bool Estado { get; set; } = true; // true=Completada, false=Anulada
 
@@ -21,12 +21,12 @@ namespace SistemaGestionVentas.Models
         public int MetodoPagoId { get; set; }
 
         [ForeignKey("MetodoPagoId")]
-        public MetodoPago MetodoPago { get; set; } = null!;
+        public MetodoPago? MetodoPago { get; set; } = null!;
 
-        public int UsuarioCreadorId { get; set; }
+        public int? UsuarioCreadorId { get; set; }
 
         [ForeignKey("UsuarioCreadorId")]
-        public Usuario UsuarioCreador { get; set; } = null!;
+        public Usuario? UsuarioCreador { get; set; } = null!;
 
         public int? UsuarioModificadorId { get; set; }
 
