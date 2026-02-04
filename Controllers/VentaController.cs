@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SistemaGestionVentas.Data;
@@ -7,26 +9,41 @@ using SistemaGestionVentas.Services;
 
 namespace SistemaGestionVentas.Controllers
 {
-    [Authorize(Policy = "Admin")]
-    public class VentaController : Controller
+    [Authorize(Policy = "Vendedor")]
+    public class VentaController : BaseController
     {
         private readonly Context _context;
         private readonly IUserService _userService;
+        private readonly VentaService _ventaService;
 
-        public VentaController(Context context, IUserService userService)
+        public VentaController(Context context, IUserService userService, VentaService ventaService)
         {
             _context = context;
             _userService = userService;
+            _ventaService = ventaService;
         }
 
         // GET: Ventas
         public async Task<IActionResult> Index()
         {
-            var context = _context
+            var currentUserId = _userService.GetCurrentUserId();
+            var roleClaim = int.TryParse(User.FindFirst(ClaimTypes.Role)?.Value, out int role)
+                ? role
+                : 0;
+
+            IQueryable<Venta> query = _context
                 .Venta.Include(v => v.MetodoPago)
                 .Include(v => v.UsuarioCreador)
                 .Include(v => v.UsuarioModificador);
-            return View(await context.ToListAsync());
+
+            if (roleClaim == 2)
+            {
+                query = query.Where(v => v.UsuarioCreadorId == currentUserId);
+            }
+
+            ViewData["MetodoPagoId"] = new SelectList(_context.MetodoPago, "Id", "Nombre");
+
+            return View(await query.ToListAsync());
         }
 
         // GET: Ventas/Details/5
@@ -53,33 +70,61 @@ namespace SistemaGestionVentas.Controllers
         // GET: Ventas/Create
         public IActionResult Create()
         {
-            ViewData["MetodoPagoId"] = new SelectList(_context.MetodoPago, "Id", "Nombre");
-            return View();
+            return renderCreate(null, null);
         }
 
-        // POST: Ventas/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            [Bind("Id,Fecha,Total,Estado,MotivoAnulacion,MetodoPagoId")] Venta venta
-        )
+        public IActionResult renderCreate(List<DetalleViewModel>? detalles, int? MetodoPagoId)
         {
-            if (ModelState.IsValid)
-            {
-                venta.UsuarioCreadorId = _userService.GetCurrentUserId();
-                _context.Add(venta);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
             ViewData["MetodoPagoId"] = new SelectList(
                 _context.MetodoPago,
                 "Id",
                 "Nombre",
-                venta.MetodoPagoId
+                MetodoPagoId
             );
-            return View(venta);
+            ViewData["Productos"] = new SelectList(
+                _context.Producto.Where(p => p.Estado == true),
+                "Id",
+                "Nombre"
+            );
+            ViewData["Detalles"] = detalles ?? null;
+            ViewData["Action"] = "Create";
+            return View("Create");
+        }
+
+        // POST: Ventas/Create
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(
+            [Bind("MetodoPagoId")] Venta venta,
+            List<DetalleViewModel> detalles
+        )
+        {
+            if (!ModelState.IsValid)
+            {
+                var msj = "";
+                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    msj += error.ErrorMessage + " ";
+                }
+                Notify(msj, "danger");
+                return renderCreate(detalles, venta.MetodoPagoId);
+            }
+
+            var result = await _ventaService.RegistrarVentaAsync(
+                venta,
+                detalles,
+                _userService.GetCurrentUserId()
+            );
+
+            if (!result.IsSuccess)
+            {
+                Notify(result.ErrorMessage ?? "Error desconocido", "danger");
+                return renderCreate(detalles, venta.MetodoPagoId);
+            }
+
+            Notify("Venta creada correctamente.", "success");
+            return RedirectToAction(nameof(Create));
         }
 
         // GET: Ventas/Edit/5
@@ -90,104 +135,123 @@ namespace SistemaGestionVentas.Controllers
                 return NotFound();
             }
 
-            var venta = await _context.Venta.FindAsync(id);
+            var venta = await _context
+                .Venta.Include(v => v.Detalles)
+                .FirstOrDefaultAsync(v => v.Id == id);
             if (venta == null)
             {
-                return NotFound();
+                Notify("Venta no encontrada.", "danger");
+                return View("Create");
             }
+
+            // Convertir DetalleVenta a DetalleViewModel
+            var detalles = venta
+                .Detalles.Select(d => new DetalleViewModel
+                {
+                    IdProducto = d.ProductoId,
+                    Cantidad = d.Cantidad,
+                    // Asumir que PrecioUnitario es el precio
+                })
+                .ToList();
+
             ViewData["MetodoPagoId"] = new SelectList(
                 _context.MetodoPago,
                 "Id",
                 "Nombre",
                 venta.MetodoPagoId
             );
-            return View(venta);
+            ViewData["Productos"] = new SelectList(
+                _context.Producto.Where(p => p.Estado == true),
+                "Id",
+                "Nombre"
+            );
+            ViewData["Detalles"] = detalles;
+            ViewData["Action"] = "Edit";
+            return View("Create", venta);
         }
 
-        // POST: Ventas/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // POST: Ventas/Edit
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
-            int id,
-            [Bind("Id,Fecha,Total,Estado,MotivoAnulacion,MetodoPagoId")] Venta venta
+            [Bind("Id,Fecha,Total,MotivoAnulacion,MetodoPagoId")] Venta venta,
+            List<DetalleViewModel> detalles
         )
         {
-            if (id != venta.Id)
+            if (!ModelState.IsValid)
             {
-                return NotFound();
+                var msj = "";
+                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    msj += error.ErrorMessage + " ";
+                }
+                Notify(msj, "danger");
+                ViewData["MetodoPagoId"] = new SelectList(
+                    _context.MetodoPago,
+                    "Id",
+                    "Nombre",
+                    venta.MetodoPagoId
+                );
+                ViewData["Productos"] = new SelectList(
+                    _context.Producto.Where(p => p.Estado == true),
+                    "Id",
+                    "Nombre"
+                );
+                ViewData["Detalles"] = detalles;
+                ViewData["Action"] = "Edit";
+                return View("Create", venta);
             }
 
-            if (ModelState.IsValid)
+            try
             {
-                try
+                var result = await _ventaService.EditarVentaAsync(
+                    venta.Id,
+                    venta,
+                    detalles,
+                    _userService.GetCurrentUserId()
+                );
+
+                if (!result.IsSuccess)
                 {
-                    venta.UsuarioModificadorId = _userService.GetCurrentUserId();
-                    _context.Update(venta);
-                    await _context.SaveChangesAsync();
+                    Notify(result.ErrorMessage ?? "Error desconocido", "danger");
+                    ViewData["MetodoPagoId"] = new SelectList(
+                        _context.MetodoPago,
+                        "Id",
+                        "Nombre",
+                        venta.MetodoPagoId
+                    );
+                    ViewData["Productos"] = new SelectList(
+                        _context.Producto.Where(p => p.Estado == true),
+                        "Id",
+                        "Nombre"
+                    );
+                    ViewData["Detalles"] = detalles;
+                    ViewData["Action"] = "Edit";
+                    return View("Create", venta);
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!VentaExists(venta.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+
+                Notify("Venta editada correctamente.", "success");
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["MetodoPagoId"] = new SelectList(
-                _context.MetodoPago,
-                "Id",
-                "Nombre",
-                venta.MetodoPagoId
-            );
-            return View(venta);
-        }
-
-        // GET: Ventas/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
+            catch (Exception)
             {
-                return NotFound();
+                Notify("Error inesperado al editar la venta.", "danger");
+                ViewData["MetodoPagoId"] = new SelectList(
+                    _context.MetodoPago,
+                    "Id",
+                    "Nombre",
+                    venta.MetodoPagoId
+                );
+                ViewData["Productos"] = new SelectList(
+                    _context.Producto.Where(p => p.Estado == true),
+                    "Id",
+                    "Nombre"
+                );
+                ViewData["Detalles"] = detalles;
+                ViewData["Action"] = "Edit";
+                return View("Create", venta);
             }
-
-            var venta = await _context
-                .Venta.Include(v => v.MetodoPago)
-                .Include(v => v.UsuarioCreador)
-                .Include(v => v.UsuarioModificador)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (venta == null)
-            {
-                return NotFound();
-            }
-
-            return View(venta);
-        }
-
-        // POST: Ventas/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var venta = await _context.Venta.FindAsync(id);
-            if (venta != null)
-            {
-                _context.Venta.Remove(venta);
-            }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
-        private bool VentaExists(int id)
-        {
-            return _context.Venta.Any(e => e.Id == id);
         }
     }
 }

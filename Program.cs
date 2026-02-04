@@ -35,6 +35,7 @@ builder.Services.AddSingleton<JwtService>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<VentaService>();
 
 // Configuración de JWT
 var jwtSettings = builder.Configuration.GetSection("TokenAuthentication");

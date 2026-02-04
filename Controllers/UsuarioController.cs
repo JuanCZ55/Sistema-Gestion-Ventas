@@ -67,6 +67,7 @@ namespace SistemaGestionVentas.Controllers
             {
                 Notify("Error al cargar los usuarios: " + e.Message, "danger");
                 // En caso de error, devolver lista sin filtros aplicados
+                int pageSize = 10;
                 var querySinFiltros = _context.Usuario;
                 var totalItems = await querySinFiltros.CountAsync();
                 var items = await querySinFiltros

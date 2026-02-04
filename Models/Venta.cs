@@ -7,14 +7,11 @@ namespace SistemaGestionVentas.Models
     {
         public int Id { get; set; }
 
-        [Required]
-        public DateTime Fecha { get; set; } = DateTime.Now;
+        public DateTime Fecha { get; set; } = DateTime.UtcNow;
 
-        [Required]
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal Total { get; set; }
+    [Column(TypeName = "decimal(10,2)")]
+    public decimal Total { get; set; } = 0;
 
-        [Required]
         public bool Estado { get; set; } = true; // true=Completada, false=Anulada
 
         public string? MotivoAnulacion { get; set; }
