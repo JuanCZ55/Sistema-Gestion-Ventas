@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
     labelField: "nombre",
     searchField: ["codigo", "nombre"],
     load: function (query, callback) {
-      fetch(`/api/productos?q=${encodeURIComponent(query)}`)
+      fetch(`/api/productos/search?q=${encodeURIComponent(query)}`)
         .then((r) => r.json())
         .then((data) => callback(data))
         .catch(() => callback());
