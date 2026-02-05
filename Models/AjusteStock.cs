@@ -8,7 +8,7 @@ namespace SistemaGestionVentas.Models
         public int Id { get; set; }
 
         [Required]
-        public DateTime Fecha { get; set; } = DateTime.Now;
+        public DateTime Fecha { get; set; } = DateTime.UtcNow;
 
         [Required(ErrorMessage = "Eliga el tipo de movimiento")]
         [Range(1, 2, ErrorMessage = "Tipo de movimiento inválido")]

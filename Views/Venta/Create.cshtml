@@ -1,7 +1,7 @@
 ﻿@model SistemaGestionVentas.Models.Venta
 
 @{
-    ViewData["Title"] = ViewData["Action"]?.ToString() ?? "Create";
+  ViewData["Title"] = ViewData["Action"]?.ToString() ?? "Create";
 }
 
 <h1>@(ViewData["Action"]?.ToString() ?? "Create")</h1>
@@ -9,176 +9,191 @@
 <h4>Venta</h4>
 <hr />
 <div class="row">
-    <div class="col-md-12">
-        <form asp-action="@(ViewData["Action"]?.ToString() ?? "Create")">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            @if (ViewData["Action"]?.ToString() == "Edit")
-            {
-                <input type="hidden" asp-for="Id" />
-                <div class="form-group">
-                    <label asp-for="MotivoAnulacion" class="control-label"></label>
-                    <input asp-for="MotivoAnulacion" class="form-control" />
-                    <span asp-validation-for="MotivoAnulacion" class="text-danger"></span>
-                </div>
-            }
-            <div class="form-group">
-                <label asp-for="MetodoPagoId" class="control-label"></label>
-                <select asp-for="MetodoPagoId" class="form-control" asp-items="ViewBag.MetodoPagoId"></select>
-            </div>
+  <div class="col-md-12">
+    <form asp-action="@(ViewData["Action"]?.ToString() ?? "Create")">
+      <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+      @if (ViewData["Action"]?.ToString() == "Edit")
+      {
+        <input type="hidden" asp-for="Id" />
+        <div class="form-group">
+          <label asp-for="MotivoAnulacion" class="control-label"></label>
+          <input asp-for="MotivoAnulacion" class="form-control" />
+          <span asp-validation-for="MotivoAnulacion" class="text-danger"></span>
+        </div>
+      }
+      <div class="row">
 
-            <h5>Productos</h5>
-            <div class="form-group">
-                <label for="producto-select">Buscar Producto:</label>
-                <select id="producto-select" class="form-control"></select>
-            </div>
+        <div class="form-group col">
+          <label for="producto-select">Buscar Producto:</label>
+          <select id="producto-select" class="form-control"></select>
+        </div>
+        <div class="form-group col">
+          <label asp-for="MetodoPagoId" class="control-label"></label>
+          <select asp-for="MetodoPagoId" class="form-control" asp-items="ViewBag.MetodoPagoId"></select>
+        </div>
+      </div>
 
-            <table id="detalles-table" class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Cantidad</th>
-                        <th>Precio</th>
-                        <th>Subtotal</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="detalles-tbody">
-                    <!-- Filas dinámicas aquí -->
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="4"><strong>Total:</strong></td>
-                        <td id="total-amount">0.00</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
+      <table id="detalles-table" class="table table-striped">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Cantidad</th>
+            <th>Precio</th>
+            <th>Subtotal</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="detalles-tbody">
+          <!-- Filas dinámicas aquí -->
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4"><strong>Total:</strong></td>
+            <td id="total-amount">0.00</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
 
-            <input type="hidden" id="detalles-input" name="detalles" />
 
-            <div class="form-group">
-                <input type="submit" value="@(ViewData["Action"]?.ToString() ?? "Create")" class="btn btn-primary" />
-            </div>
-        </form>
-    </div>
+      <div class="form-group">
+        <input type="submit" value="@(ViewData["Action"]?.ToString() ?? "Create")" class="btn btn-primary" />
+      </div>
+    </form>
+  </div>
 </div>
 
 <div>
-    <a asp-action="Index">Back to List</a>
+  <a asp-action="Index">Back to List</a>
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
-    <script>
-        let detalles = @Html.Raw(Json.Serialize(ViewData["Detalles"] ?? new List<object>()));
-        let productosCache = {};
+  @{
+    await Html.RenderPartialAsync("_ValidationScriptsPartial");
+  }
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+  <script>
+    let detalles = @Html.Raw(Json.Serialize(ViewData["Detalles"] ?? new List<object>()));
+    let productosCache = {};
+    let detalleIndex = 0;
 
-        document.addEventListener("DOMContentLoaded", function () {
-            // Inicializar Tom Select para productos
-            new TomSelect("#producto-select", {
-                valueField: "id",
-                labelField: "nombre",
-                searchField: ["codigo", "nombre"],
-                load: function (query, callback) {
-                    if (query.length < 2) return callback();
-                    fetch(`/api/productos/search?q=${encodeURIComponent(query)}`)
-                        .then(r => r.json())
-                        .then(data => callback(data))
-                        .catch(() => callback());
-                },
-                onChange: function (id) {
-                    if (!id) return;
-                    agregarProducto(id);
-                    this.clear();
-                },
-                render: {
-                    option: function (item, escape) {
-                        return `<div>${escape(item.nombre)} (${escape(item.precioVenta)})</div>`;
-                    }
-                }
-            });
+    document.addEventListener("DOMContentLoaded", function () {
+    // Inicializar Tom Select para productos
+    new TomSelect("#producto-select", {
+    valueField: "id",
+    labelField: "nombre",
+    searchField: ["codigo", "nombre"],
+    persist: false,
+    cache: false,
+    load: function (query, callback) {
+    if (query.length < 1) return callback([]);
+    fetch(`/api/productos/search?q=${encodeURIComponent(query)}`)
+    .then(r => r.json())
+    .then(data => callback(data))
+    .catch(() => callback());
+    },
+    onType: function (str) {
+    if (str === '') {
+    this.clearOptions();
+    }
+    },
+    onChange: function (id) {
+    if (!id) return;
+    agregarProducto(id);
+    this.clear();
+    },
+    render: {
+    option: function (item, escape) {
+    return `<div>${escape(item.id)} - ${escape(item.nombre)} - $${escape(item.precioVenta)} (${escape(item.codigo)})</div>`;
+    }
+    }
+    });
 
-            // Cargar detalles existentes
-            detalles.forEach(async d => {
-                if (productosCache[d.idProducto]) {
-                    agregarFila(d.idProducto, productosCache[d.idProducto].nombre, d.cantidad, productosCache[d.idProducto].precio);
-                } else {
-                    try {
-                        const response = await fetch(`/api/productos/${d.idProducto}`);
-                        if (response.ok) {
-                            const producto = await response.json();
-                            productosCache[d.idProducto] = producto;
-                            agregarFila(d.idProducto, producto.nombre, d.cantidad, producto.precioVenta);
-                        }
-                    } catch (error) {
-                        console.error('Error cargando producto existente:', error);
-                    }
-                }
-            });
-            calcularTotal();
-        });
+    // Cargar detalles existentes
+    detalles.forEach(async (d, index) => {
+    if (productosCache[d.idProducto]) {
+    agregarFila(d.idProducto, productosCache[d.idProducto].nombre, d.cantidad, productosCache[d.idProducto].precio, index);
+    } else {
+    try {
+    const response = await fetch(`/api/productos/${d.idProducto}`);
+    if (response.ok) {
+    const producto = await response.json();
+    productosCache[d.idProducto] = producto;
+    agregarFila(d.idProducto, producto.nombre, d.cantidad, producto.precioVenta, index);
+    }
+    } catch (error) {
+    console.error('Error cargando producto existente:', error);
+    }
+    }
+    });
+    calcularTotal();
+    });
 
-        async function agregarProducto(id) {
-            if (productosCache[id]) {
-                agregarFila(id, productosCache[id].nombre, 1, productosCache[id].precio);
-                return;
-            }
-            try {
-                const response = await fetch(`/api/productos/${id}`);
-                if (!response.ok) throw new Error('Producto no encontrado');
-                const producto = await response.json();
-                productosCache[id] = producto;
-                agregarFila(id, producto.nombre, 1, producto.precioVenta);
-            } catch (error) {
-                alert('Error obteniendo producto: ' + error.message);
-            }
-        }
+    async function agregarProducto(id) {
+    if (productosCache[id]) {
+    agregarFila(id, productosCache[id].nombre, 1, productosCache[id].precio, detalleIndex++);
+    return;
+    }
+    try {
+    const response = await fetch(`/api/productos/${id}`);
+    if (!response.ok) throw new Error('Producto no encontrado');
+    const producto = await response.json();
+    productosCache[id] = producto;
+    agregarFila(id, producto.nombre, 1, producto.precioVenta, detalleIndex++);
+    } catch (error) {
+    alert('Error obteniendo producto: ' + error.message);
+    }
+    }
 
-        function agregarFila(idProducto, nombre, cantidad, precio) {
-            const tbody = document.getElementById('detalles-tbody');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${idProducto}</td>
-                <td>${nombre}</td>
-                <td><input type="number" class="form-control cantidad" value="${cantidad}" min="1" onchange="calcularSubtotal(this); calcularTotal();"></td>
-                <td class="precio">${precio.toFixed(2)}</td>
-                <td class="subtotal">${(cantidad * precio).toFixed(2)}</td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="removerFila(this)">Remover</button></td>
-            `;
-            tbody.appendChild(row);
-            calcularTotal();
-        }
+    function agregarFila(idProducto, nombre, cantidad, precio, index) {
+    const tbody = document.getElementById('detalles-tbody');
+    const row = document.createElement('tr');
+    row.innerHTML = `
+    <td>${idProducto}
+    <input type="hidden" name="detalles[${index}].IdProducto" value="${idProducto}" />
+    <input type="hidden" name="detalles[${index}].PrecioUnitario" value="${precio}" />
+    </td>
+    <td>${nombre}</td>
+    <td>
+    <input type="number" class="form-control cantidad" name="detalles[${index}].Cantidad" value="${cantidad}" min="1" onchange="calcularSubtotal(this); calcularTotal();">
+    </td>
+    <td class="precio">${precio.toFixed(2)}</td>
+    <td class="subtotal">${(cantidad * precio).toFixed(2)}</td>
+    <td><button type="button" class="btn btn-danger btn-sm" onclick="removerFila(this)">Remover</button></td>
+    `;
+    tbody.appendChild(row);
+    calcularTotal();
+    }
 
-        function calcularSubtotal(input) {
-            const row = input.closest('tr');
-            const cantidad = parseFloat(input.value) || 0;
-            const precio = parseFloat(row.querySelector('.precio').textContent) || 0;
-            const subtotal = cantidad * precio;
-            row.querySelector('.subtotal').textContent = subtotal.toFixed(2);
-        }
+    function calcularSubtotal(input) {
+    const row = input.closest('tr');
+    const cantidad = parseFloat(input.value) || 0;
+    const precio = parseFloat(row.querySelector('.precio').textContent) || 0;
+    const subtotal = cantidad * precio;
+    row.querySelector('.subtotal').textContent = subtotal.toFixed(2);
+    }
 
-        function calcularTotal() {
-            const subtotales = Array.from(document.querySelectorAll('.subtotal')).map(td => parseFloat(td.textContent) || 0);
-            const total = subtotales.reduce((sum, val) => sum + val, 0);
-            document.getElementById('total-amount').textContent = total.toFixed(2);
-        }
+    function calcularTotal() {
+    const subtotales = Array.from(document.querySelectorAll('.subtotal')).map(td => parseFloat(td.textContent) || 0);
+    const total = subtotales.reduce((sum, val) => sum + val, 0);
+    document.getElementById('total-amount').textContent = total.toFixed(2);
+    }
 
-        function removerFila(button) {
-            button.closest('tr').remove();
-            calcularTotal();
-        }
+    function removerFila(button) {
+    button.closest('tr').remove();
+    calcularTotal();
+    }
 
-        // Serializar detalles antes de enviar
-        document.querySelector('form').addEventListener('submit', function () {
-            const rows = document.querySelectorAll('#detalles-tbody tr');
-            const detallesArray = Array.from(rows).map(row => ({
-                idProducto: parseInt(row.cells[0].textContent),
-                cantidad: parseInt(row.querySelector('.cantidad').value)
-            }));
-            document.getElementById('detalles-input').value = JSON.stringify(detallesArray);
-        });
-    </script>
+    // Validación antes de enviar
+    @* document.querySelector('form').addEventListener('submit', function (event) {
+    const rows = document.querySelectorAll('#detalles-tbody tr');
+    if (rows.length === 0) {
+    alert('Agregue al menos un detalle a la venta.');
+    event.preventDefault();
+    return false;
+    }
+    }); *@
+  </script>
 }
