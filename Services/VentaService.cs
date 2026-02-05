@@ -42,7 +42,7 @@ namespace SistemaGestionVentas.Services
                 // Crear AjusteStock para trazabilidad
                 var ajuste = new AjusteStock
                 {
-                    Fecha = DateTime.Now,
+                    Fecha = DateTime.UtcNow,
                     TipoMovimiento = 2,
                     UsuarioId = usuarioId,
                     MotivoAjusteId = 1,
@@ -144,7 +144,8 @@ namespace SistemaGestionVentas.Services
                 return new Result
                 {
                     IsSuccess = false,
-                    ErrorMessage = $"Error al registrar la venta: {ex.Message}",
+                    ErrorMessage =
+                        $"Error al registrar la venta: {ex.Message} {ex.InnerException?.Message}",
                 };
             }
         }
@@ -171,7 +172,7 @@ namespace SistemaGestionVentas.Services
                 // Crear AjusteStock para trazabilidad (tipo 1: Alta por anulación)
                 var ajuste = new AjusteStock
                 {
-                    Fecha = DateTime.Now,
+                    Fecha = DateTime.UtcNow,
                     TipoMovimiento = 1, // Alta por anulación
                     UsuarioId = usuarioId,
                     MotivoAjusteId = 2, // Asumir ID para "Anulación" (ajustar si necesario)

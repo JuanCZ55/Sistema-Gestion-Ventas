@@ -31,10 +31,14 @@ namespace SistemaGestionVentas.Controllers
                 ? role
                 : 0;
 
+            ViewData["UserRole"] = roleClaim;
+
             IQueryable<Venta> query = _context
                 .Venta.Include(v => v.MetodoPago)
                 .Include(v => v.UsuarioCreador)
-                .Include(v => v.UsuarioModificador);
+                .Include(v => v.UsuarioModificador)
+                .Include(v => v.Detalles)
+                .ThenInclude(d => d.Producto);
 
             if (roleClaim == 2)
             {
