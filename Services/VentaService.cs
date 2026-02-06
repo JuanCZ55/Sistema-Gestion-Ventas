@@ -128,9 +128,10 @@ namespace SistemaGestionVentas.Services
 
                     totalAcumulado += item.Cantidad * productoInfo.PrecioVenta;
                 }
-
+                venta.MotivoAnulacion = null;
                 venta.Total = totalAcumulado;
                 venta.UsuarioCreadorId = usuarioId;
+                venta.Id = 0; // Forzar nueva entidad
                 _context.Venta.Add(venta);
 
                 await _context.SaveChangesAsync();
@@ -150,7 +151,11 @@ namespace SistemaGestionVentas.Services
             }
         }
 
-        public async Task<Result> AnularVentaAsync(int ventaId, int usuarioId)
+        public async Task<Result> AnularVentaAsync(
+            int ventaId,
+            int usuarioId,
+            string motivoAnulacion
+        )
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -219,6 +224,7 @@ namespace SistemaGestionVentas.Services
 
                 // Anular la venta
                 venta.Estado = false;
+                venta.MotivoAnulacion = motivoAnulacion;
                 venta.UsuarioModificadorId = usuarioId;
                 _context.Update(venta);
 
@@ -248,7 +254,11 @@ namespace SistemaGestionVentas.Services
             try
             {
                 // Anular la venta existente
-                var anularResult = await AnularVentaAsync(ventaId, usuarioId);
+                var anularResult = await AnularVentaAsync(
+                    ventaId,
+                    usuarioId,
+                    nuevaVenta.MotivoAnulacion ?? "Editada"
+                );
                 if (!anularResult.IsSuccess)
                 {
                     return anularResult;

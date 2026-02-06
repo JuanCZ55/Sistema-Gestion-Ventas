@@ -257,5 +257,33 @@ namespace SistemaGestionVentas.Controllers
                 return View("Create", venta);
             }
         }
+
+        // POST: Ventas/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id, string motivoAnulacion)
+        {
+            try
+            {
+                var result = await _ventaService.AnularVentaAsync(
+                    id,
+                    _userService.GetCurrentUserId(),
+                    motivoAnulacion
+                );
+                if (!result.IsSuccess)
+                {
+                    Notify(result.ErrorMessage ?? "Error al anular la venta.", "danger");
+                }
+                else
+                {
+                    Notify("Venta anulada correctamente.", "success");
+                }
+            }
+            catch (Exception ex)
+            {
+                Notify($"Error inesperado: {ex.Message}", "danger");
+            }
+            return RedirectToAction(nameof(Index));
+        }
     }
 }
