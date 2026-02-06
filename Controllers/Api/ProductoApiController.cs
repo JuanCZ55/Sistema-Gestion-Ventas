@@ -35,6 +35,7 @@ namespace SistemaGestionVentas.Controllers.Api
                         || EF.Functions.Like(p.Nombre, $"%{q}%")
                     )
                 )
+                .OrderBy(p => p.Nombre)
                 .Take(20)
                 .Select(p => new
                 {
