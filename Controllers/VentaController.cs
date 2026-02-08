@@ -55,7 +55,8 @@ namespace SistemaGestionVentas.Controllers
         {
             if (id == null)
             {
-                return NotFound();
+                Notify("Id de venta no proporcionado.", "danger");
+                return RedirectToAction(nameof(Index));
             }
 
             var venta = await _context
@@ -67,7 +68,8 @@ namespace SistemaGestionVentas.Controllers
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (venta == null)
             {
-                return NotFound();
+                Notify("Venta no encontrada.", "danger");
+                return RedirectToAction(nameof(Index));
             }
 
             return View(venta);
@@ -138,7 +140,8 @@ namespace SistemaGestionVentas.Controllers
         {
             if (id == null)
             {
-                return NotFound();
+                Notify("Id de venta no proporcionado.", "danger");
+                return RedirectToAction(nameof(Index));
             }
 
             var venta = await _context
@@ -147,7 +150,7 @@ namespace SistemaGestionVentas.Controllers
             if (venta == null)
             {
                 Notify("Venta no encontrada.", "danger");
-                return View("Create");
+                return RedirectToAction(nameof(Index));
             }
 
             // Convertir DetalleVenta a DetalleViewModel
