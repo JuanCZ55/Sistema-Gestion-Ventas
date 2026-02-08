@@ -4,64 +4,122 @@
   ViewData["Title"] = "Details";
 }
 
-<h1>Details</h1>
 
-<div>
-  <h4>Venta</h4>
-  <hr />
-  <dl class="row">
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.Fecha)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.Fecha)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.Total)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.Total)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.Estado)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.Estado)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.MotivoAnulacion)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.MotivoAnulacion)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.MetodoPago)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.MetodoPago.Nombre)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.UsuarioCreador)
-    </dt>
-    <dd class="col-sm-10">
-      @Html.DisplayFor(model => model.UsuarioCreador.Apellido)
-    </dd>
-    <dt class="col-sm-2">
-      @Html.DisplayNameFor(model => model.UsuarioModificador)
-    </dt>
-    <dd class="col-sm-10">
-      @if (Model.UsuarioModificador != null)
-      {
-        @Model.UsuarioModificador.Apellido
-      }
-      else
-      {
-        <span>N/A</span>
-      }
-    </dd>
-  </dl>
+<h1 class="mb-4">Detalle de Venta</h1>
+
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0">Venta #@Model.Id</h5>
+  </div>
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Fecha)</dt>
+      <dd class="col-sm-9">@Model.Fecha.ToString("dd/MM/yyyy HH:mm")</dd>
+
+      <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Total)</dt>
+      <dd class="col-sm-9">$@Model.Total.ToString("N2")</dd>
+
+      <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Estado)</dt>
+      <dd class="col-sm-9">
+        @if (Model.Estado)
+        {
+          <span class="badge bg-success">Activa</span>
+        }
+        else
+        {
+          <span class="badge bg-danger">Anulada</span>
+        }
+      </dd>
+
+      <dt class="col-sm-3">@Html.DisplayNameFor(model => model.MotivoAnulacion)</dt>
+      <dd class="col-sm-9">
+        @if (!string.IsNullOrWhiteSpace(Model.MotivoAnulacion))
+        {
+          @Model.MotivoAnulacion
+        }
+        else
+        {
+          <span class="text-muted">N/A</span>
+        }
+      </dd>
+
+      <dt class="col-sm-3">@Html.DisplayNameFor(model => model.MetodoPago)</dt>
+      <dd class="col-sm-9">
+        @if (Model.MetodoPago != null)
+        {
+          @Model.MetodoPago.Nombre
+        }
+        else
+        {
+          <span class="text-muted">N/A</span>
+        }
+      </dd>
+
+      <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UsuarioCreador)</dt>
+      <dd class="col-sm-9 text-capitalize">
+        @if (Model.UsuarioCreador != null)
+        {
+          @($"{Model.UsuarioCreador.Nombre} {Model.UsuarioCreador.Apellido}")
+        }
+        else
+        {
+          <span class="text-muted">N/A</span>
+        }
+      </dd>
+
+      <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UsuarioModificador)</dt>
+      <dd class="col-sm-9 text-capitalize">
+        @if (Model.UsuarioModificador != null)
+        {
+          @($"{Model.UsuarioModificador.Nombre} {Model.UsuarioModificador.Apellido}")
+        }
+        else
+        {
+          <span class="text-muted">N/A</span>
+        }
+      </dd>
+    </dl>
+
+    <hr />
+    <h5 class="mt-4 mb-3">Detalle de productos</h5>
+    @if (Model.Detalles != null && Model.Detalles.Any())
+    {
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Precio Unitario</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var det in Model.Detalles)
+            {
+              <tr>
+                <td>@det.Producto?.Nombre</td>
+                <td>@det.Cantidad</td>
+                <td>$@det.PrecioUnitario.ToString("N2")</td>
+                <td>$@( (det.Cantidad * det.PrecioUnitario).ToString("N2") )</td>
+              </tr>
+            }
+            <tr>
+              <td colspan="3" class="text-end fw-bold">Total</td>
+              <td class="fw-bold">$@Model.Total.ToString("N2")</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    }
+    else
+    {
+      <div class="alert alert-info">No hay productos en esta venta.</div>
+    }
+  </div>
 </div>
-<div>
-  <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-  <a asp-action="Index">Back to List</a>
+<div class="d-flex justify-content-between mt-3">
+  <a asp-action="Index" class="btn btn-secondary">Volver al listado</a>
+  <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-outline-primary me-2">Editar</a>
 </div>

@@ -47,7 +47,7 @@ namespace SistemaGestionVentas.Controllers
 
             ViewData["MetodoPagoId"] = new SelectList(_context.MetodoPago, "Id", "Nombre");
 
-            return View(await query.ToListAsync());
+            return View(await query.OrderByDescending(v => v.Fecha).ToListAsync());
         }
 
         // GET: Ventas/Details/5
@@ -62,6 +62,8 @@ namespace SistemaGestionVentas.Controllers
                 .Venta.Include(v => v.MetodoPago)
                 .Include(v => v.UsuarioCreador)
                 .Include(v => v.UsuarioModificador)
+                .Include(v => v.Detalles)
+                .ThenInclude(d => d.Producto)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (venta == null)
             {
@@ -154,7 +156,6 @@ namespace SistemaGestionVentas.Controllers
                 {
                     IdProducto = d.ProductoId,
                     Cantidad = d.Cantidad,
-                    // Asumir que PrecioUnitario es el precio
                 })
                 .ToList();
 
@@ -263,6 +264,11 @@ namespace SistemaGestionVentas.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id, string motivoAnulacion)
         {
+            if (motivoAnulacion == null || motivoAnulacion.Trim() == "")
+            {
+                Notify("El motivo de anulacion es obligatorio.", "danger");
+                return RedirectToAction(nameof(Index));
+            }
             try
             {
                 var result = await _ventaService.AnularVentaAsync(

@@ -16,7 +16,7 @@
       {
         <input type="hidden" asp-for="Id" />
         <div class="form-group">
-          <label asp-for="MotivoAnulacion" class="control-label"></label>
+          <label asp-for="MotivoAnulacion" class="control-label"> Motivo Anulación</label>
           <input asp-for="MotivoAnulacion" class="form-control" />
           <span asp-validation-for="MotivoAnulacion" class="text-danger"></span>
         </div>
@@ -28,7 +28,7 @@
           <select id="producto-select" class="form-control"></select>
         </div>
         <div class="form-group col">
-          <label asp-for="MetodoPagoId" class="control-label"></label>
+          <label asp-for="MetodoPagoId" class="control-label"> Métodos de Pago</label>
           <select asp-for="MetodoPagoId" class="form-control" asp-items="ViewBag.MetodoPagoId"></select>
         </div>
       </div>
@@ -57,16 +57,18 @@
       </table>
 
 
-      <div class="form-group">
+      <div class="d-flex justify-content-between mt-3">
+        <a asp-action="Index" class="btn btn-secondary">
+          Back to List
+        </a>
         <input type="submit" value="@(ViewData["Action"]?.ToString() ?? "Create")" class="btn btn-primary" />
+
       </div>
+
     </form>
   </div>
 </div>
 
-<div>
-  <a asp-action="Index">Back to List</a>
-</div>
 
 @section Scripts {
   @{
@@ -77,7 +79,9 @@
   <script>
     let detalles = @Html.Raw(Json.Serialize(ViewData["Detalles"] ?? new List<object>()));
     let productosCache = {};
-    let detalleIndex = 0;
+    function generarGuid() {
+    return crypto.randomUUID();
+    }
 
     document.addEventListener("DOMContentLoaded", function () {
     // Inicializar Tom Select para productos
@@ -94,34 +98,44 @@
     .then(data => callback(data))
     .catch(() => callback());
     },
-    onType: function (str) {
-    if (str === '') {
+
+    onType: function () {
+
     this.clearOptions();
-    }
+    this.lastQuery = null;
+    },
+    onBlur: function () {
+    this.clearOptions();
+    this.lastQuery = null;
     },
     onChange: function (id) {
     if (!id) return;
+
     agregarProducto(id);
+
     this.clear();
+    this.clearOptions();
     },
+
     render: {
     option: function (item, escape) {
-    return `<div>${escape(item.id)} - ${escape(item.nombre)} - $${escape(item.precioVenta)} (${escape(item.codigo)})</div>`;
+    return `<div>[${escape(item.codigo)}] ${escape(item.nombre)} — $${escape(item.precioVenta)}</div>`;
     }
     }
     });
 
     // Cargar detalles existentes
-    detalles.forEach(async (d, index) => {
+    detalles.forEach(async d => {
+    const guid = generarGuid();
     if (productosCache[d.idProducto]) {
-    agregarFila(d.idProducto, productosCache[d.idProducto].nombre, d.cantidad, productosCache[d.idProducto].precio, index);
+    agregarFila(d.idProducto, productosCache[d.idProducto].nombre, d.cantidad, productosCache[d.idProducto].precio, guid);
     } else {
     try {
     const response = await fetch(`/api/productos/${d.idProducto}`);
     if (response.ok) {
     const producto = await response.json();
     productosCache[d.idProducto] = producto;
-    agregarFila(d.idProducto, producto.nombre, d.cantidad, producto.precioVenta, index);
+    agregarFila(d.idProducto, producto.nombre, d.cantidad, producto.precioVenta, guid);
     }
     } catch (error) {
     console.error('Error cargando producto existente:', error);
@@ -133,7 +147,8 @@
 
     async function agregarProducto(id) {
     if (productosCache[id]) {
-    agregarFila(id, productosCache[id].nombre, 1, productosCache[id].precio, detalleIndex++);
+    const guid = generarGuid();
+    agregarFila(id, productosCache[id].nombre, 1, productosCache[id].precio, guid);
     return;
     }
     try {
@@ -141,28 +156,44 @@
     if (!response.ok) throw new Error('Producto no encontrado');
     const producto = await response.json();
     productosCache[id] = producto;
-    agregarFila(id, producto.nombre, 1, producto.precioVenta, detalleIndex++);
+    const guid = generarGuid();
+    agregarFila(id, producto.nombre, 1, producto.precioVenta, guid);
     } catch (error) {
     alert('Error obteniendo producto: ' + error.message);
     }
     }
 
-    function agregarFila(idProducto, nombre, cantidad, precio, index) {
+    function agregarFila(idProducto, nombre, cantidad, precio, guid) {
     const tbody = document.getElementById('detalles-tbody');
     const row = document.createElement('tr');
+    row.dataset.guid = guid;
+
     row.innerHTML = `
     <td>${idProducto}
-    <input type="hidden" name="detalles[${index}].IdProducto" value="${idProducto}" />
-    <input type="hidden" name="detalles[${index}].PrecioUnitario" value="${precio}" />
+    <input type="hidden" name="Detalles.Index" value="${guid}" />
+    <input type="hidden" name="Detalles[${guid}].IdProducto" value="${idProducto}" />
+    <input type="hidden" name="Detalles[${guid}].PrecioUnitario" value="${precio}" />
     </td>
     <td>${nombre}</td>
     <td>
-    <input type="number" class="form-control cantidad" name="detalles[${index}].Cantidad" value="${cantidad}" min="1" onchange="calcularSubtotal(this); calcularTotal();">
+    <input type="number"
+    class="form-control cantidad"
+    name="Detalles[${guid}].Cantidad"
+    value="${cantidad}"
+    min="1"
+    onchange="calcularSubtotal(this); calcularTotal();" />
     </td>
     <td class="precio">${precio.toFixed(2)}</td>
     <td class="subtotal">${(cantidad * precio).toFixed(2)}</td>
-    <td><button type="button" class="btn btn-danger btn-sm" onclick="removerFila(this)">Remover</button></td>
+    <td>
+    <button type="button"
+    class="btn btn-danger btn-sm"
+    onclick="removerFila(this)">
+    Remover
+    </button>
+    </td>
     `;
+
     tbody.appendChild(row);
     calcularTotal();
     }

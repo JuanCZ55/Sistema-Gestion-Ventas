@@ -1,39 +1,40 @@
 ﻿@model IEnumerable<SistemaGestionVentas.Models.Venta>
-
+@using System.Security.Claims
 @{
-  ViewData["Title"] = "Index";
+  ViewData["Title"] = "Ventas";
 }
 
-<h1>Index</h1>
+<h1>Ventas</h1>
 
 <p>
-  <a asp-action="Create">Create New</a>
+  <a asp-action="Create" class="btn btn-primary">
+    Crear Nueva Venta
+  </a>
 </p>
 <table class="table">
   <thead>
     <tr>
       <th>
-        @Html.DisplayNameFor(model => model.Fecha)
+        Fecha
       </th>
       <th>
-        @Html.DisplayNameFor(model => model.Total)
+        Detalle
       </th>
       <th>
-        @Html.DisplayNameFor(model => model.Estado)
+        Método de Pago
       </th>
+      @if (User.FindFirst(ClaimTypes.Role)?.Value == "1")
+      {
+        <th>
+          Usuario Creador
+        </th>
+        <th>
+          Usuario Modificador
+        </th>
+      }
       <th>
-        @Html.DisplayNameFor(model => model.MotivoAnulacion)
+        Estado
       </th>
-      <th>
-        @Html.DisplayNameFor(model => model.MetodoPago)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.UsuarioCreador)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.UsuarioModificador)
-      </th>
-      <th></th>
     </tr>
   </thead>
   <tbody>
@@ -41,39 +42,156 @@
     {
       <tr>
         <td>
-          @Html.DisplayFor(modelItem => item.Fecha)
+          @item.Fecha.AddHours(-3).ToString("dd/MM/yyyy HH:mm")
         </td>
         <td>
-          @Html.DisplayFor(modelItem => item.Total)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.Estado)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.MotivoAnulacion)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.MetodoPago.Nombre)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.UsuarioCreador.Apellido)
-        </td>
-        <td>
-          @if (item.UsuarioModificador != null)
+          @if (item.Detalles.Any())
           {
-            @item.UsuarioModificador.Apellido
-          }
+            var first = item.Detalles.First();
+            <span data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="@string.Join("<br>", item.Detalles.Select(d => d.Producto?.Nombre + " x" + d.Cantidad))">@(first.Producto?.Nombre)
+              x@(first.Cantidad)</span>
+            }
           else
+            {
+              <span>N/A</span>
+            }
+          </td>
+          <td>
+            @if (item.MetodoPago != null)
+            {
+              @Html.DisplayFor(modelItem => item!.MetodoPago!.Nombre)
+            }
+            else
+            {
+              <span>N/A</span>
+            }
+          </td>
+          @if (User.FindFirst(ClaimTypes.Role)?.Value == "1")
           {
-            <span>N/A</span>
+            <td>
+              @if (item.UsuarioCreador != null)
+              {
+                @($"{item.UsuarioCreador.Nombre} {item.UsuarioCreador.Apellido}")
+
+              }
+              else
+              {
+                <span>N/A</span>
+              }
+            </td>
+            <td>
+              @if (item.UsuarioModificador != null)
+              {
+                @($"{item.UsuarioModificador.Nombre} {item.UsuarioModificador.Apellido}")
+
+              }
+              else
+              {
+                <span>N/A</span>
+              }
+            </td>
           }
-        </td>
-        <td>
-          <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-          <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-          <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-        </td>
-      </tr>
+          <td>
+            @if (item.Estado)
+            {
+              <span class="badge bg-success">Activa</span>
+            }
+            else
+            {
+              <span class="badge bg-danger">Anulada</span>
+            }
+          </td>
+          <td class="text-nowrap">
+            @if (item.Estado)
+            {
+              <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary me-1">
+                Editar
+              </a>
+            }
+            else
+            {
+              <button class="btn btn-sm btn-outline-secondary me-1" disabled>
+                Editar
+              </button>
+            }
+
+            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info me-1">
+              Detalles
+            </a>
+
+            @if (item.Estado)
+            {
+              <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
+                      data-bs-target="#anularModal-@item.Id">
+                Anular
+              </button>
+            }
+            else
+            {
+              <button class="btn btn-sm btn-outline-secondary" disabled>
+                Anular
+              </button>
+            }
+          </td>
+          @if (item.Estado)
+          {
+            <div class="modal fade" id="anularModal-@item.Id" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <form asp-action="Delete" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@item.Id" />
+                    <div class="modal-header">
+                      <h5 class="modal-title">Anular venta</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="mb-3">
+                        <div class="alert alert-warning">
+                          <strong>¿Seguro que deseas anular esta venta?</strong>
+                          <br />
+                          <ul class="mb-2">
+                            <li><b>ID:</b> @item.Id</li>
+                            <li><b>Fecha:</b> @item.Fecha.AddHours(-3).ToString("dd/MM/yyyy HH:mm")</li>
+                            <li><b>Método de Pago:</b> @(item.MetodoPago?.Nombre ?? "N/A")</li>
+                            <li><b>Detalle:</b>     <ul>
+    @foreach (var det in item.Detalles)
+    {
+      <li>@det.Producto?.Nombre x @det.Cantidad</li>
     }
-  </tbody>
-</table>
+  </ul>
+  </li>
+                            </ul>
+                          </div>
+                          <label class="form-label">Motivo de anulacion</label>
+                          <textarea name="motivoAnulacion" class="form-control" rows="3" required></textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                          Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                          Confirmar anulacion
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            }
+
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+      });
+    </script>
