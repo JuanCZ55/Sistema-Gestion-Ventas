@@ -53,7 +53,7 @@ builder
     {
         options.LoginPath = "/Login";
         options.LogoutPath = "/Login/Logout";
-        //options.AccessDeniedPath = "/login/Denegado";
+        options.AccessDeniedPath = "/Home/Denied";
     })
     .AddJwtBearer(options =>
     {
@@ -100,6 +100,7 @@ if (!app.Environment.IsDevelopment())
 
 // Archivos estáticos
 app.UseStaticFiles();
+app.UseStatusCodePagesWithReExecute("/Home/Error404");
 
 app.UseRouting();
 

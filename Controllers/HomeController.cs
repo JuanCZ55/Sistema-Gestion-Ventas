@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaGestionVentas.Models;
 
 namespace SistemaGestionVentas.Controllers
 {
+    [Authorize(Policy = "Vendedor")]
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
@@ -33,6 +35,16 @@ namespace SistemaGestionVentas.Controllers
                     RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
                 }
             );
+        }
+
+        public IActionResult Error404()
+        {
+            return View();
+        }
+
+        public IActionResult Denied()
+        {
+            return View();
         }
     }
 }
