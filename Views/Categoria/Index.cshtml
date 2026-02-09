@@ -1,41 +1,233 @@
 ﻿@model IEnumerable<SistemaGestionVentas.Models.Categoria>
 
 @{
-    ViewData["Title"] = "Index";
+  ViewData["Title"] = "Categorías";
 }
 
-<h1>Index</h1>
+<h1>Categorías</h1>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
+<!-- Formulario de filtros -->
+<form asp-action="Index" method="get" class="mb-3">
+  <div class="row">
+    <div class="col-md-5">
+      <button type="button" class="btn btn-success" onclick="openCreateModal()">Crear Nueva</button>
+    </div>
+    <div class="col-md-3">
+      <input type="text" name="nombre" value="@ViewBag?.Nombre" class="form-control" placeholder="Buscar por nombre" />
+    </div>
+    <div class="col-md-2">
+      <select name="estado" class="form-select">
+        <option value="">Todos</option>
+        <option value="true" selected="@(ViewBag?.Estado == true)">Activo</option>
+        <option value="false" selected="@(ViewBag?.Estado == false)">Inactivo</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+    </div>
+  </div>
+</form>
+
+<!-- Información de paginado -->
+
+
 <table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Nombre)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Estado)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Nombre)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Estado)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Estado</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    @foreach (var c in Model)
+    {
+      <tr data-id="@c.Id" data-nombre="@c.Nombre" data-estado="@c.Estado.ToString().ToLower()">
+        <td class="text-capitalize">@c.Nombre</td>
+        <td>@if (c.Estado) {
+          <span class="badge bg-success">Activa</span>
+        }
+        else
+        {
+          <span class="badge bg-danger">Anulada</span>
+        }
+      </td>
+      <td>
+
+        @if (c.Estado)
+        {
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="openEditModal(this)">Editar</button>
+          <button type="button" class="btn btn-sm btn-outline-danger"
+                  onclick="openEstadoModal(@c.Id, '@c.Nombre', false)">Desactivar</button>
+        }
+        else
+        {
+          <button type="button" class="btn btn-sm btn-outline-secondary" disabled>Editar</button>
+          <button type="button" class="btn btn-sm btn-outline-success"
+                  onclick="openEstadoModal(@c.Id, '@c.Nombre', true)">Activar</button>
+        }
+
+      </td>
+    </tr>
+  }
+</tbody>
 </table>
+
+<!-- Paginado -->
+@{
+  int total = ViewBag?.Total ?? 0;
+  int pageSize = ViewBag?.PageSize ?? 10;
+  int totalPages = total > 0 ? (int)Math.Ceiling((double)total / pageSize) : 1;
+  int currentPage = ViewBag?.Page ?? 1;
+  string nombre = ViewBag?.Nombre ?? "";
+  bool? estado = ViewBag?.Estado;
+}
+
+@if (totalPages > 1)
+{
+  <nav>
+    <ul class="pagination justify-content-center">
+      @if (currentPage > 1)
+      {
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)" asp-route-nombre="@nombre"
+             asp-route-estado="@estado">Anterior</a>
+        </li>
+      }
+
+      @{
+        int startPage = Math.Max(1, currentPage - 2);
+        int endPage = Math.Min(totalPages, currentPage + 2);
+      }
+
+      @if (startPage > 1)
+      {
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="1" asp-route-nombre="@nombre"
+             asp-route-estado="@estado">1</a>
+        </li>
+        @if (startPage > 2)
+        {
+          <li class="page-item disabled">
+            <span class="page-link">...</span>
+          </li>
+        }
+      }
+
+      @for (int i = startPage; i <= endPage; i++)
+      {
+        <li class="page-item @(i == currentPage ? "active" : "")">
+          <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-nombre="@nombre"
+             asp-route-estado="@estado">@i</a>
+        </li>
+      }
+
+      @if (endPage < totalPages)
+      {
+        @if (endPage < totalPages - 1)
+        {
+          <li class="page-item disabled">
+            <span class="page-link">...</span>
+          </li>
+        }
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="@totalPages" asp-route-nombre="@nombre"
+             asp-route-estado="@estado">@totalPages</a>
+        </li>
+      }
+
+      @if (currentPage < totalPages)
+      {
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)" asp-route-nombre="@nombre"
+             asp-route-estado="@estado">Siguiente</a>
+        </li>
+      }
+    </ul>
+  </nav>
+}
+
+<!-- Modal para Crear/Editar -->
+<div class="modal fade" id="categoriaModal" tabindex="-1" aria-labelledby="categoriaModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="categoriaModalLabel">Crear Categoría</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="categoriaForm" method="post">
+        <div class="modal-body">
+          <input type="hidden" id="categoriaId" name="Id" value="" />
+          <div class="mb-3">
+            <label for="categoriaNombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="categoriaNombre" name="Nombre" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Confirmar Cambio de Estado -->
+<div class="modal fade" id="estadoModal" tabindex="-1" aria-labelledby="estadoModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="estadoModalLabel">Confirmar Acción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que quieres <span id="accionTexto"></span> la categoría "<span
+          id="categoriaNombreConfirm"></span>"?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <form id="estadoForm" method="post" style="display: inline;">
+            <button type="submit" id="btndel">Confirmar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openCreateModal() {
+      document.getElementById('categoriaId').value = '';
+      document.getElementById('categoriaNombre').value = '';
+      document.getElementById('categoriaForm').action = '/Categoria/Create';
+      document.getElementById('categoriaModalLabel').textContent = 'Crear Categoría';
+
+      const modal = new bootstrap.Modal(document.getElementById('categoriaModal'));
+      modal.show();
+    }
+
+    function openEditModal(button) {
+      const row = button.closest('tr');
+      const id = row.dataset.id;
+      const nombre = row.dataset.nombre;
+
+      document.getElementById('categoriaId').value = id;
+      document.getElementById('categoriaNombre').value = nombre;
+      document.getElementById('categoriaForm').action = '/Categoria/Edit';
+      document.getElementById('categoriaModalLabel').textContent = 'Editar Categoría';
+
+      const modal = new bootstrap.Modal(document.getElementById('categoriaModal'));
+      modal.show();
+    }
+
+    function openEstadoModal(id, nombre, activar) {
+      document.getElementById('categoriaNombreConfirm').textContent = nombre;
+      document.getElementById('accionTexto').textContent = activar ? 'activar' : 'desactivar';
+      document.getElementById('accionTexto').className = activar ? 'text-success' : 'text-danger';
+      document.getElementById('accionTexto').className += ' fw-bold';
+      btndel.className = activar ? 'btn btn-success' : 'btn btn-danger';
+      document.getElementById('estadoForm').action = '/Categoria/Estado/' + id;
+
+      const modal = new bootstrap.Modal(document.getElementById('estadoModal'));
+      modal.show();
+    }
+  </script>

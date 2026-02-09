@@ -29,10 +29,10 @@ namespace SistemaGestionVentas.Controllers
                 const int pageSize = 10;
                 IQueryable<Categoria> query = _context.Categoria;
 
-                if (!string.IsNullOrEmpty(nombre))
+                if (!string.IsNullOrWhiteSpace(nombre))
                 {
-                    var nombreNormalizado = nombre.Trim().ToLower();
-                    query = query.Where(c => c.Nombre.Contains(nombreNormalizado));
+                    nombre = nombre.Trim().ToLower();
+                    query = query.Where(c => c.Nombre.ToLower().Contains(nombre));
                 }
 
                 if (estado.HasValue)
@@ -40,53 +40,25 @@ namespace SistemaGestionVentas.Controllers
                     query = query.Where(c => c.Estado == estado.Value);
                 }
 
-                query = query.OrderBy(c => c.Id);
+                query = query.OrderBy(c => c.Nombre);
 
                 int total = await query.CountAsync();
 
                 var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-                return View(
-                    new
-                    {
-                        Total = total,
-                        Page = page,
-                        PageSize = pageSize,
-                        Items = data,
-                        Nombre = nombre,
-                        Estado = estado,
-                    }
-                );
+                ViewBag.Total = total;
+                ViewBag.Page = page;
+                ViewBag.PageSize = pageSize;
+                ViewBag.Nombre = nombre;
+                ViewBag.Estado = estado;
+
+                return View(data);
             }
             catch (System.Exception)
             {
                 Notify("Error al cargar las categorias", "danger");
-                return View();
+                return View(Enumerable.Empty<Categoria>());
             }
-        }
-
-        // GET: Categoria/Details/5
-        [HttpGet]
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-            var categoria = await _context
-                .Categoria.Where(c => c.Id == id)
-                .Select(c => new
-                {
-                    c.Id,
-                    c.Nombre,
-                    c.Estado,
-                })
-                .FirstOrDefaultAsync();
-            if (categoria == null)
-            {
-                return NotFound();
-            }
-            return Json(categoria);
         }
 
         // POST: Categoria/Create
