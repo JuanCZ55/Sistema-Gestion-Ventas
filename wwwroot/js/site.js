@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
         .catch(() => callback());
     },
     onType: function (str) {
-      if (str === '') {
+      if (str === "") {
         this.clearOptions();
       }
     },
@@ -51,7 +51,7 @@ window.showToast = function (type, message) {
   const toastEl = document.getElementById("appToast");
   const body = document.getElementById("appToastBody");
   toastEl.className = `toast text-white bg-${type} border-0`;
-  body.textContent = message;
+  body.innerHTML = message;
   const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
   toast.show();
 };
