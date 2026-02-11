@@ -1,71 +1,285 @@
-﻿@model IEnumerable<SistemaGestionVentas.Models.Proveedor>
+﻿@model List<SistemaGestionVentas.Models.Proveedor>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Proveedores";
+    // Mantenemos tu lógica de paginación intacta
+    int total = ViewBag?.Total ?? 0;
+    int pageSize = ViewBag?.PageSize ?? 10;
+    int totalPages = total > 0 ? (int)Math.Ceiling((double)total / pageSize) : 1;
+    int currentPage = ViewBag?.Page ?? 1;
+    string search = ViewBag?.Search ?? "";
+    bool? estado = ViewBag?.Estado;
 }
 
-<h1>Index</h1>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.NombreEmpresa)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.NombreContacto)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Telefono)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Direccion)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Email)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Notas)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Estado)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.NombreEmpresa)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.NombreContacto)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Telefono)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Direccion)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Notas)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Estado)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
+<div id="app">
+
+    <h1>Proveedores</h1>
+
+    <form asp-action="Index" method="get" class="mb-3">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <button type="button" class="btn btn-primary" @@click="openModal('create')">Crear nuevo</button>
+            </div>
+            <div class="col-md-4">
+                <input type="text" name="search" value="@search" class="form-control"
+                       placeholder="Buscar por empresa, contacto o telefono" />
+            </div>
+            <div class="col-md-2">
+                <select name="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="true" selected="@(estado == true)">Activo</option>
+                    <option value="false" selected="@(estado == false)">Inactivo</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+            </div>
+        </div>
+    </form>
+
+    <table class="table table-striped" id="tablaProveedores">
+        <thead>
+            <tr>
+                <th>Empresa</th>
+                <th>Contacto</th>
+                <th>Telefono</th>
+                <th>Dirección</th>
+                <th>Email</th>
+                <th>Notas</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td class="text-capitalize">@p.NombreEmpresa</td>
+                    <td class="text-capitalize">@p.NombreContacto</td>
+                    <td>@p.Telefono</td>
+                    <td>@p.Direccion</td>
+                    <td>@p.Email</td>
+                    <td>@p.Notas</td>
+                    <td>
+                        @if (p.Estado) { <span class="badge bg-success">Activo</span> }
+                        else { <span class="badge bg-danger">Inactivo</span> }
+                    </td>
+                    <td class="d-flex gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-info" @@click="openModal('view', @p.Id)">Ver</button> 
+                        <button type="button" class="btn btn-sm btn-outline-warning" @@click="openModal('edit', @p.Id)">Editar</button> 
+
+                        @if (User.IsInRole("1"))
+                        {
+                            if (p.Estado)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger" @@click="openModal('estado', @p.Id, false)">
+                                    Desactivar
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-success" @@click="openModal('estado', @p.Id, true)">
+                                    Activar
+                                </button>
+                            }
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (totalPages > 1) {
+        <nav>
+            <ul class="pagination justify-content-center">
+                @if (currentPage > 1) {
+                    <li class="page-item">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)" asp-route-search="@search" asp-route-estado="@estado">Anterior</a>
+                    </li>
+                }
+                @{
+                    int startPage = Math.Max(1, currentPage - 2);
+                    int endPage = Math.Min(totalPages, currentPage + 2);
+                  }
+                  @for (int i = startPage; i <= endPage; i++)
+                  {
+                     <li class="page-item @(i == currentPage ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-search="@search" asp-route-estado="@estado">@i</a>
+                     </li>
+                  }
+                  @if (currentPage < totalPages)
+                  {
+                    <li class="page-item"><a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)" asp-route-search="@search" asp-route-estado="@estado">Siguiente</a></li>
+                  }
+            </ul>
+        </nav>
+    }
+
+    
+    <div class="modal fade" id="proveedorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ modalTitle }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <form :action="formAction" method="post">
+                    <div class="modal-body">
+                        @Html.AntiForgeryToken()
+                        
+                        <input type="hidden" name="Id" v-model="form.id" />
+
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Empresa</label>
+                                <input type="text" class="form-control" name="NombreEmpresa" v-model="form.nombreEmpresa" :disabled="isReadOnly" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Contacto*</label>
+                                <input type="text" class="form-control" name="NombreContacto" v-model="form.nombreContacto" :disabled="isReadOnly" required />
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-md-4">
+                                <label class="form-label">Telefono*</label>
+                                <input type="text" class="form-control" name="Telefono" v-model="form.telefono" :disabled="isReadOnly" required />
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Direccion</label>
+                                <input type="text" class="form-control" name="Direccion" v-model="form.direccion" :disabled="isReadOnly" />
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="Email" v-model="form.email" :disabled="isReadOnly" />
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label">Notas</label>
+                            <textarea class="form-control" name="Notas" v-model="form.notas" :disabled="isReadOnly" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-2" v-if="showEstadoDisplay">
+                            <label class="form-label">Estado Actual</label>
+                            <input type="text" class="form-control" :value="estadoTexto" disabled />
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            {{ mode === 'view' ? 'Cerrar' : 'Cancelar' }}
+                        </button>
+                        
+                        <button type="submit" :class="['btn', submitBtnClass]" v-if="mode !== 'view'">
+                            {{ submitBtnText }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    mode: '', // 'create', 'edit', 'view', 'estado'
+                    esActivacion: false, 
+                    form: {
+                        id: '',
+                        nombreEmpresa: '',
+                        nombreContacto: '',
+                        telefono: '',
+                        direccion: '',
+                        email: '',
+                        notas: '',
+                        estado: true 
+                    },
+                    bsModal: null
+                }
+            },
+            computed: {
+                modalTitle() {
+                    if (this.mode === 'create') return 'Crear Proveedor';
+                    if (this.mode === 'edit') return 'Editar Proveedor';
+                    if (this.mode === 'view') return 'Detalle Proveedor';
+                    if (this.mode === 'estado') return this.esActivacion ? 'Activar Proveedor' : 'Desactivar Proveedor';
+                    return '';
+                },
+                formAction() {
+                    if (this.mode === 'create') return '/Proveedor/Create';
+                    if (this.mode === 'edit') return '/Proveedor/Edit';
+                    if (this.mode === 'estado') return `/Proveedor/Estado`;
+                    return '';
+                },
+                isReadOnly() {
+                    return this.mode === 'view' || this.mode === 'estado';
+                },
+                showEstadoDisplay() {
+                    return this.mode === 'view' || this.mode === 'estado';
+                },
+                estadoTexto() {
+                    return this.form.estado ? 'Activo' : 'Inactivo';
+                },
+                submitBtnText() {
+                    if (this.mode === 'create') return 'Guardar';
+                    if (this.mode === 'edit') return 'Guardar Cambios';
+                    if (this.mode === 'estado') return this.esActivacion ? 'Confirmar Activación' : 'Confirmar Desactivación';
+                    return '';
+                },
+                submitBtnClass() {
+                    if (this.mode === 'estado') return this.esActivacion ? 'btn-success' : 'btn-danger';
+                    return 'btn-primary';
+                }
+            },
+            mounted() {
+                this.bsModal = new bootstrap.Modal(document.getElementById('proveedorModal'));
+            },
+            methods: {
+                resetForm() {
+                    this.form = { id: '', nombreEmpresa: '', nombreContacto: '', telefono: '', direccion: '', email: '', notas: '', estado: true };
+                },
+                async openModal(mode, id = null, extraParam = null) {
+                    this.mode = mode;
+                    this.resetForm();
+
+                    if (mode === 'estado') {
+                        this.esActivacion = extraParam; 
+                    }
+
+                    if (id) {
+                        await this.fetchData(id);
+                    }
+
+                    this.bsModal.show();
+                },
+                async fetchData(id) {
+                    try {
+                        const response = await fetch(`/Proveedor/Details/${id}`);
+                        if (!response.ok) throw new Error('Error de red');
+                        const data = await response.json();
+                        
+                        this.form = { ...this.form, ...data }; 
+
+                    } catch (error) {
+                        console.error(error);
+                        if (window.showToast) {
+                            window.showToast('danger', 'No se pudo cargar la información.');
+                        } else {
+                            alert('No se pudo cargar la información.');
+                        }
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
 }
-    </tbody>
-</table>
