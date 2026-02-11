@@ -21,7 +21,7 @@ namespace SistemaGestionVentas.Models
         [StringLength(
             200,
             MinimumLength = 5,
-            ErrorMessage = "La dirección debe tener entre 5 y 200 caracteres"
+            ErrorMessage = "La direccion debe tener entre 5 y 200 caracteres"
         )]
         public string? Direccion { get; set; }
 
