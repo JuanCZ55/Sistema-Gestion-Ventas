@@ -28,13 +28,13 @@ namespace SistemaGestionVentas.Controllers
             const int pageSize = 10;
             IQueryable<Proveedor> query = _context.Proveedor;
 
-            if (!string.IsNullOrEmpty(search))
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                var searchNormalizado = search.Trim().ToLower();
+                search = search.Trim().ToLower();
                 query = query.Where(p =>
-                    p.NombreContacto.Contains(searchNormalizado)
-                    || (p.NombreEmpresa != null && p.NombreEmpresa.Contains(searchNormalizado))
-                    || p.Telefono.Contains(searchNormalizado)
+                    p.NombreContacto.Contains(search)
+                    || (p.NombreEmpresa != null && p.NombreEmpresa.Contains(search))
+                    || p.Telefono.Contains(search)
                 );
             }
 
@@ -49,17 +49,14 @@ namespace SistemaGestionVentas.Controllers
 
             var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-            return View(
-                new
-                {
-                    Total = total,
-                    Page = page,
-                    PageSize = pageSize,
-                    Data = data,
-                    Search = search,
-                    Estado = estado,
-                }
-            );
+            ViewBag.Total = total;
+            ViewBag.Page = page;
+            ViewBag.PageSize = pageSize;
+            ViewBag.Search = search;
+            ViewBag.Estado = estado;
+
+            // Modelo principal
+            return View(data);
         }
 
         // GET: Proveedor/Details/5
@@ -104,7 +101,7 @@ namespace SistemaGestionVentas.Controllers
                 var msj = "";
                 foreach (var item in ModelState.Values.SelectMany(x => x.Errors))
                 {
-                    msj += item.ErrorMessage + "\n";
+                    msj += item.ErrorMessage + "<br>";
                 }
                 Notify(msj, "danger");
                 return RedirectToAction(nameof(Index));
@@ -141,7 +138,12 @@ namespace SistemaGestionVentas.Controllers
         {
             if (!ModelState.IsValid)
             {
-                Notify("Error al actualizar el proveedor. Verifique los datos.", "danger");
+                var msj = "";
+                foreach (var item in ModelState.Values.SelectMany(x => x.Errors))
+                {
+                    msj += item.ErrorMessage + "<br>";
+                }
+                Notify(msj, "danger");
                 return RedirectToAction(nameof(Index));
             }
 
