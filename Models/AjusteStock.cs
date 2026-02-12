@@ -17,10 +17,10 @@ namespace SistemaGestionVentas.Models
         public string? Nota { get; set; }
 
         // --- Relaciones ---
-        public int UsuarioId { get; set; }
+        public int? UsuarioId { get; set; }
 
         [ForeignKey("UsuarioId")]
-        public Usuario Usuario { get; set; } = null!;
+        public Usuario? Usuario { get; set; } = null!;
 
         public int? VentaId { get; set; }
 
@@ -31,7 +31,7 @@ namespace SistemaGestionVentas.Models
         public int MotivoAjusteId { get; set; }
 
         [ForeignKey("MotivoAjusteId")]
-        public MotivoAjuste MotivoAjuste { get; set; } = null!;
+        public MotivoAjuste? MotivoAjuste { get; set; } = null!;
 
         // Propiedad de navegación
         public List<AjusteStockDetalle> Detalles { get; set; } = new List<AjusteStockDetalle>();

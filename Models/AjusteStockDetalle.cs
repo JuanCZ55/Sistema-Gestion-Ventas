@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace SistemaGestionVentas.Models
 {
@@ -16,6 +17,7 @@ namespace SistemaGestionVentas.Models
         public int AjusteStockId { get; set; }
 
         [ForeignKey("AjusteStockId")]
+        [JsonIgnore]
         public AjusteStock AjusteStock { get; set; } = null!;
 
         [Required(ErrorMessage = "El producto es obligatorio")]
