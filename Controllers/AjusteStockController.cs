@@ -29,10 +29,12 @@ namespace SistemaGestionVentas.Controllers
             int pageNumber = 1,
             DateTime? Fmin = null,
             DateTime? Fmax = null,
-            int? TipoMovimiento = null
+            int? TipoMovimiento = null,
+            int? MotivoAjusteId = null
         )
         {
             int pageSize = 10;
+            ViewBag.MotivosAjuste = await _context.MotivoAjuste.ToListAsync();
             try
             {
                 IQueryable<AjusteStock> query = _context
@@ -61,61 +63,36 @@ namespace SistemaGestionVentas.Controllers
                 {
                     query = query.Where(a => a.TipoMovimiento == TipoMovimiento.Value);
                 }
+                if (MotivoAjusteId.HasValue)
+                {
+                    query = query.Where(a => a.MotivoAjusteId == MotivoAjusteId.Value);
+                }
 
                 var totalItems = await query.CountAsync();
 
                 var items = await query
+                    .OrderByDescending(a => a.Fecha)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                return View(
-                    new
-                    {
-                        Items = items,
-                        TotalItems = totalItems,
-                        PageNumber = pageNumber,
-                        PageSize = pageSize,
-                        Fmin = Fmin,
-                        Fmax = Fmax,
-                        TipoMovimiento = TipoMovimiento,
-                    }
-                );
+                ViewBag.Items = items;
+                ViewBag.TotalItems = totalItems;
+                ViewBag.PageNumber = pageNumber;
+                ViewBag.PageSize = pageSize;
+                ViewBag.Fmin = Fmin;
+                ViewBag.Fmax = Fmax;
+                ViewBag.TipoMovimiento = TipoMovimiento;
+                ViewBag.MotivoAjusteId = MotivoAjusteId;
+
+                return View();
             }
             catch (Exception ex)
             {
-                Notify($"Error al cargar los ajustes de stock:\n {ex.Message}", "danger");
-                IQueryable<AjusteStock> querySinFiltros = _context
-                    .AjusteStock.Include(a => a.MotivoAjuste)
-                    .Include(a => a.Usuario)
-                    .Include(a => a.Venta)
-                    .Include(a => a.Detalles)
-                    .ThenInclude(d => d.Producto);
+                Console.WriteLine($"Error al cargar los ajustes de stock: {ex}");
+                Notify($"Error al cargar los ajustes de stock: {ex.Message}", "danger");
 
-                if (!User.IsInRole("1"))
-                {
-                    var userId = _userService.GetCurrentUserId();
-                    querySinFiltros = querySinFiltros.Where(a => a.UsuarioId == userId);
-                }
-
-                var totalItems = await querySinFiltros.CountAsync();
-                var items = await querySinFiltros
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                return View(
-                    new
-                    {
-                        Items = items,
-                        TotalItems = totalItems,
-                        PageNumber = pageNumber,
-                        PageSize = pageSize,
-                        Fmin = (DateTime?)null,
-                        Fmax = (DateTime?)null,
-                        TipoMovimiento = (int?)null,
-                    }
-                );
+                return RedirectToAction("Index", "Home");
             }
         }
 
@@ -131,13 +108,15 @@ namespace SistemaGestionVentas.Controllers
                 .AjusteStock.Include(a => a.MotivoAjuste)
                 .Include(a => a.Usuario)
                 .Include(a => a.Venta)
+                .Include(a => a.Detalles)
+                .ThenInclude(d => d.Producto)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (ajusteStock == null)
             {
                 return NotFound();
             }
 
-            return View(ajusteStock);
+            return Json(ajusteStock);
         }
 
         // POST: AjusteStock/Create
@@ -145,13 +124,13 @@ namespace SistemaGestionVentas.Controllers
         [Authorize(Policy = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
-            [Bind("TipoMovimiento,Nota,VentaId,MotivoAjusteId")] AjusteStock ajusteStock,
+            [Bind("TipoMovimiento,Nota,MotivoAjusteId")] AjusteStock ajusteStock,
             List<DetalleViewModel>? detalles
         )
         {
-            if (ajusteStock.VentaId == null && (detalles == null || !detalles.Any()))
+            if (detalles == null || !detalles.Any())
             {
-                Notify("Debe seleccionar una Venta o agregar productos manualmente", "danger");
+                Notify("Ingrese al menos un producto", "danger");
                 return RedirectToAction(nameof(Index));
             }
 
@@ -170,7 +149,6 @@ namespace SistemaGestionVentas.Controllers
             }
 
             using var tx = await _context.Database.BeginTransactionAsync();
-
             try
             {
                 ajusteStock.UsuarioId = _userService.GetCurrentUserId();
@@ -179,38 +157,7 @@ namespace SistemaGestionVentas.Controllers
                 _context.Add(ajusteStock);
                 await _context.SaveChangesAsync();
 
-                List<DetalleViewModel> itemsAProcesar = new List<DetalleViewModel>();
-
-                if (ajusteStock.VentaId != null && ajusteStock.VentaId > 0)
-                {
-                    // CASO A: Viene de una Venta (Devolución/Reembolso)
-                    var venta = await _context
-                        .Venta.Include(v => v.Detalles)
-                        .FirstOrDefaultAsync(v => v.Id == ajusteStock.VentaId);
-
-                    if (venta == null)
-                    {
-                        await tx.RollbackAsync();
-                        Notify("Venta no encontrada.", "danger");
-                        return RedirectToAction(nameof(Index));
-                    }
-
-                    itemsAProcesar = venta
-                        .Detalles.Select(d => new DetalleViewModel
-                        {
-                            IdProducto = d.ProductoId,
-                            Cantidad = d.Cantidad,
-                        })
-                        .ToList();
-                }
-                else
-                {
-                    // CASO B: Ajuste Manual
-                    if (detalles != null)
-                    {
-                        itemsAProcesar = detalles;
-                    }
-                }
+                List<DetalleViewModel> itemsAProcesar = detalles;
 
                 foreach (var item in itemsAProcesar)
                 {
@@ -222,15 +169,14 @@ namespace SistemaGestionVentas.Controllers
                     };
                     _context.Add(detalleAjuste);
 
-                    // B. ACTUALIZAR EL STOCK FISICO
                     var producto = await _context.Producto.FindAsync(item.IdProducto);
                     if (producto != null)
                     {
-                        if (ajusteStock.TipoMovimiento == 1) // 1: Alta / Entrada
+                        if (ajusteStock.TipoMovimiento == 1)
                         {
                             producto.Stock += item.Cantidad;
                         }
-                        else // 2: Baja / Salida
+                        else
                         {
                             producto.Stock -= item.Cantidad;
                             if (producto.Stock < 0)
