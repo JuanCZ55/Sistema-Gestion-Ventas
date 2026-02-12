@@ -1,73 +1,411 @@
-﻿@model IEnumerable<SistemaGestionVentas.Models.AjusteStock>
-
-@{
-  ViewData["Title"] = "Index";
+﻿@{
+  ViewData["Title"] = "Ajustes de Stock";
+  var isAdmin = User.IsInRole("1");
+  var items = ViewBag.Items as IEnumerable<SistemaGestionVentas.Models.AjusteStock>;
+  var totalItems = (int)ViewBag.TotalItems;
+  var pageNumber = (int)ViewBag.PageNumber;
+  var pageSize = (int)ViewBag.PageSize;
+  var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+  var fmin = ViewBag.Fmin as DateTime?;
+  var fmax = ViewBag.Fmax as DateTime?;
+  var tipoMovimiento = ViewBag.TipoMovimiento as int?;
+  var motivoAjusteId = ViewBag.MotivoAjusteId as int?;
 }
 
-<h1>Index</h1>
+<div id="app">
 
-<p>
-  <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-  <thead>
-    <tr>
-      <th>
-        @Html.DisplayNameFor(model => model.Fecha)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.TipoMovimiento)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.Nota)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.Usuario)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.Venta)
-      </th>
-      <th>
-        @Html.DisplayNameFor(model => model.MotivoAjuste)
-      </th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    @foreach (var item in Model)
+  <form asp-action="Index" method="get" class="mb-3">
+    <div class="row">
+      <div class="col">
+        <label class="invisible">Crear nuevo</label>
+        <button type="button" class="btn btn-primary" @@click="openModal('create')">Crear
+          nuevo</button> <br>
+        </div>
+        <div class="col-md-2">
+          <label for="Fmin">Fecha Mínima</label>
+          <input type="date" id="Fmin" name="Fmin" value="@(fmin?.ToString("yyyy-MM-dd"))" class="form-control" />
+        </div>
+        <div class="col-md-2">
+          <label for="Fmax">Fecha Máxima</label>
+          <input type="date" id="Fmax" name="Fmax" value="@(fmax?.ToString("yyyy-MM-dd"))" class="form-control" />
+        </div>
+        <div class="col-md-2">
+          <label for="TipoMovimiento">Tipo Movimiento</label>
+          <select id="TipoMovimiento" name="TipoMovimiento" class="form-control">
+            <option value="">Todos</option>
+            <option value="1" selected="@(tipoMovimiento == 1)">Alta</option>
+            <option value="2" selected="@(tipoMovimiento == 2)">Baja</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="MotivoAjusteId">Motivo Ajuste</label>
+          <select id="MotivoAjusteId" name="MotivoAjusteId" class="form-control">
+            <option value="">Todos</option>
+            @if (ViewBag.MotivosAjuste != null)
+            {
+              @foreach (var motivo in ViewBag.MotivosAjuste)
+              {
+                <option value="@motivo?.Id" selected="@(motivoAjusteId == motivo?.Id)">@motivo?.Nombre</option>
+              }
+            }
+            else
+            {
+              <option value="">No hay motivos</option>
+            }
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-info form-control">Filtrar</button>
+        </div>
+      </div>
+    </form>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>
+            Fecha
+          </th>
+          <th>
+            Productos Afectados
+          </th>
+          <th class="text-center">
+            Tipo Movimiento
+          </th>
+          <th>
+
+            Motivo Ajuste
+          </th>
+          @if (isAdmin)
+          {
+            <th>
+              Usuario
+            </th>
+          }
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (items != null)
+        {
+          @foreach (var item in items)
+          {
+            <tr>
+              <td>
+                @item.Fecha.ToString("dd/MM/yyyy HH:mm")
+              </td>
+              <td>
+                @if (item.Detalles != null && item.Detalles.Any())
+                {
+                  <span>@item.Detalles.Count producto(s) afectado(s)</span>
+                }
+                else
+                {
+                  <span>No hay productos</span>
+                }
+              </td>
+              <td class="text-center">
+                @if (item.TipoMovimiento == 1)
+                {
+                  <span class="badge bg-success">Alta</span>
+                }
+                else
+                {
+                  <span class="badge bg-danger">Baja</span>
+                }
+              </td>
+              <td>
+                @item.MotivoAjuste?.Nombre
+              </td>
+              @if (isAdmin)
+              {
+                @if (item.Usuario != null)
+                {
+                  <td title="@($"ID: {item.Usuario.Id}, Email: {item.Usuario.Email}, Rol: {item.Usuario.Rol}")"
+                      class="text-capitalize">
+                    @item.Usuario.Nombre @item.Usuario.Apellido
+                  </td>
+                }
+                else
+                {
+                  <td>N/A</td>
+                }
+              }
+              <td>
+                <button type="button" class="btn btn-sm btn-outline-info" @@click="openModal('view', @item.Id)">Ver</button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+
+    @if (totalPages > 1)
     {
-      <tr>
-        <td>
-          @Html.DisplayFor(modelItem => item.Fecha)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.TipoMovimiento)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.Nota)
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.Usuario.Apellido)
-        </td>
-        <td>
-          @if (item.Venta != null)
+      <nav>
+        <ul class="pagination justify-content-center">
+          @if (pageNumber > 1)
           {
-            @item.Venta.Id
+            <li class="page-item">
+              <a class="page-link" asp-action="Index" asp-route-pageNumber="@(pageNumber - 1)" asp-route-Fmin="@fmin"
+                 asp-route-Fmax="@fmax" asp-route-TipoMovimiento="@tipoMovimiento"
+                 asp-route-MotivoAjusteId="@motivoAjusteId">Anterior</a>
+            </li>
           }
-          else
+          @for (int i = Math.Max(1, pageNumber - 2); i <= Math.Min(totalPages, pageNumber + 2); i++)
           {
-            <span>N/A</span>
+            <li class="page-item @(i == pageNumber ? "active" : "")">
+              <a class="page-link" asp-action="Index" asp-route-pageNumber="@i" asp-route-Fmin="@fmin" asp-route-Fmax="@fmax"
+                 asp-route-TipoMovimiento="@tipoMovimiento" asp-route-MotivoAjusteId="@motivoAjusteId">@i</a>
+            </li>
           }
-        </td>
-        <td>
-          @Html.DisplayFor(modelItem => item.MotivoAjuste.Nombre)
-        </td>
-        <td>
-          <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-          <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-          <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-        </td>
-      </tr>
+          @if (pageNumber < totalPages)
+          {
+            <li class="page-item">
+              <a class="page-link" asp-action="Index" asp-route-pageNumber="@(pageNumber + 1)" asp-route-Fmin="@fmin"
+                 asp-route-Fmax="@fmax" asp-route-TipoMovimiento="@tipoMovimiento"
+                 asp-route-MotivoAjusteId="@motivoAjusteId">Siguiente</a>
+            </li>
+          }
+        </ul>
+      </nav>
     }
-  </tbody>
-</table>
+
+    <!-- Modal para Crear y Ver -->
+    <div class="modal fade" id="ajusteModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ modalTitle }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+
+          <div v-if="mode === 'create'">
+            <form action="/AjusteStock/Create" method="post">
+              @Html.AntiForgeryToken()
+              <div class="modal-body">
+                <div class="row">
+                  <div class="form-group col-12">
+                    <label for="producto-select">Buscar Producto:</label>
+                    <select id="producto-select" class="form-control"></select>
+                  </div>
+                  <div class="form-group col-6">
+                    <label for="MotivoAjusteId">Motivo Ajuste</label>
+                    <select name="MotivoAjusteId" class="form-control" required>
+                      <option value="">Seleccionar...</option>
+                      @if (ViewBag.MotivosAjuste != null)
+                      {
+                        @foreach (var motivo in ViewBag.MotivosAjuste)
+                        {
+                          @if (motivo?.Id != 1 && motivo?.Id != 2)
+                          {
+                            <option value="@motivo?.Id">@motivo?.Nombre</option>
+                          }
+                        }
+                      }
+                    </select>
+                  </div>
+                  <div class="form-group col-6">
+                    <label for="TipoMovimiento">Tipo Movimiento</label>
+                    <select name="TipoMovimiento" class="form-control" required>
+                      <option value="1">Alta</option>
+                      <option value="2">Baja</option>
+                    </select>
+                  </div>
+                  <div class="form-group col">
+                    <label for="Nota">Nota (Opcional)</label>
+                    <textarea name="Nota" class="form-control" rows="2"></textarea>
+                  </div>
+                </div>
+
+
+                <table id="detalles-table" class="table table-striped mt-3">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Cantidad</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr @Html.Raw("v-for=\"(detalle, index) in detalles\" :key=\"detalle.guid\"")>
+                      <td>{{ detalle.idProducto }}
+                        <input type="hidden" :name="`detalles[${index}].IdProducto`" :value="detalle.idProducto" />
+                      </td>
+                      <td>{{ detalle.nombre }}</td>
+                      <td>
+                        <input type="number" class="form-control" :name="`detalles[${index}].Cantidad`"
+                               v-model.number="detalle.cantidad" min="1" required />
+                      </td>
+                      <td>
+                        <button type="button" class="btn btn-danger btn-sm" @Html.Raw("@click=\"removerDetalle(index)\"")>
+                          Remover
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Crear Ajuste</button>
+              </div>
+            </form>
+          </div>
+
+          <div @Html.Raw("v-else-if=\"mode === 'view'\"") class="modal-body">
+            <div @Html.Raw("v-if=\"viewData\"")>
+              <p><strong>Fecha:</strong> {{ viewData.fecha }}</p>
+              <p><strong>Tipo Movimiento:</strong> {{ viewData.tipoMovimiento }}</p>
+              <p><strong>Motivo Ajuste:</strong> {{ viewData.motivoAjuste }}</p>
+              <p><strong>Nota:</strong> {{ viewData.nota || 'N/A' }}</p>
+              <p><strong>Usuario:</strong> {{ viewData.usuario }}</p>
+              <h5>Productos Afectados:</h5>
+              <ul @Html.Raw("v-if=\"viewData.detalles && viewData.detalles.length\"")>
+                <li @Html.Raw("v-for=\"detalle in viewData.detalles\"")>{{ detalle.producto }}: {{ detalle.cantidad }}
+                </li>
+              </ul>
+              <p @Html.Raw("v-else")>No hay productos</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  @section Scripts {
+    @{
+      await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+    <script>
+      const { createApp } = Vue;
+
+      createApp({
+      data() {
+      return {
+      mode: '',
+      viewData: null,
+      bsModal: null,
+      tomSelect: null,
+      detalles: [],
+      productosCache: {}
+      }
+      },
+      computed: {
+      modalTitle() {
+      if (this.mode === 'create') return 'Crear Ajuste de Stock';
+      if (this.mode === 'view') return 'Detalle del Ajuste';
+      return '';
+      }
+      },
+      mounted() {
+      this.bsModal = new bootstrap.Modal(document.getElementById('ajusteModal')); this.bsModal._element.addEventListener('shown.bs.modal', () => {
+      if (this.mode === 'create') {
+      this.initTomSelect();
+      }
+      });
+      },
+      methods: {
+      openModal(mode, id = null) {
+      this.mode = mode;
+      this.viewData = null;
+
+      if (mode === 'create') {
+      this.detalles = [];
+      } else if (mode === 'view' && id) {
+      this.fetchViewData(id);
+      }
+
+      this.bsModal.show();
+      },
+      initTomSelect() {
+      if (this.tomSelect) {
+      this.tomSelect.destroy();
+      }
+      this.tomSelect = new TomSelect("#producto-select", {
+      valueField: "id",
+      labelField: "nombre",
+      searchField: ["codigo", "nombre"],
+      persist: false,
+      cache: false,
+      load: (query, callback) => {
+      if (query.length < 1) return callback([]);
+      fetch(`/api/productos/search?q=${encodeURIComponent(query)}`)
+      .then(r => r.json())
+      .then(data => callback(data))
+      .catch(() => callback());
+      },
+      onChange: (id) => {
+      if (!id) return;
+      this.agregarProducto(id);
+      this.tomSelect.clear();
+      this.tomSelect.clearOptions();
+      },
+      render: {
+      option: (item, escape) => `<div>[${escape(item.codigo)}] ${escape(item.nombre)} — $${escape(item.precioVenta)}</div>`
+      }
+      });
+      },
+      async agregarProducto(id) {
+      if (this.productosCache[id]) {
+      const guid = this.generarGuid();
+      this.detalles.push({
+      guid,
+      idProducto: id,
+      nombre: this.productosCache[id].nombre,
+      cantidad: 1
+      });
+      return;
+      }
+      try {
+      const response = await fetch(`/api/productos/${id}`);
+      if (!response.ok) throw new Error('Producto no encontrado');
+      const producto = await response.json();
+      this.productosCache[id] = producto;
+      const guid = this.generarGuid();
+      this.detalles.push({
+      guid,
+      idProducto: id,
+      nombre: producto.nombre,
+      cantidad: 1
+      });
+      } catch (error) {
+      alert('Error obteniendo producto: ' + error.message);
+      }
+      },
+      removerDetalle(index) {
+      this.detalles.splice(index, 1);
+      },
+      generarGuid() {
+      return crypto.randomUUID();
+      },
+      async fetchViewData(id) {
+      try {
+      const response = await fetch(`/AjusteStock/Details/${id}`);
+      if (response.ok) {
+      const data = await response.json();
+      this.viewData = {
+      fecha: new Date(data.fecha).toLocaleString(),
+      tipoMovimiento: data.tipoMovimiento === 1 ? 'Alta' : 'Baja',
+      motivoAjuste: data.motivoAjuste?.nombre || 'N/A',
+      nota: data.nota,
+      usuario: `${data.usuario?.apellido}, ${data.usuario?.nombre}`,
+      detalles: data.detalles?.map(d => ({ producto: d.producto?.nombre || 'N/A', cantidad: d.cantidad })) || []
+      };
+      } else {
+      alert('Error al cargar detalles');
+      }
+      } catch (error) {
+      console.error('Error:', error);
+      showToast('danger', 'Error al cargar detalles');
+      }
+      }
+      }
+      }).mount('#app');
+    </script>
+  }
