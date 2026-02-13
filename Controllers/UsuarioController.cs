@@ -48,20 +48,18 @@ namespace SistemaGestionVentas.Controllers
                 var totalItems = await query.CountAsync();
 
                 var items = await query
+                    .OrderBy(u => u.Id)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                return View(
-                    new
-                    {
-                        Items = items,
-                        TotalItems = totalItems,
-                        PageNumber = pageNumber,
-                        PageSize = pageSize,
-                        Search = search,
-                    }
-                );
+                ViewBag.Items = items;
+                ViewBag.TotalItems = totalItems;
+                ViewBag.PageNumber = pageNumber;
+                ViewBag.PageSize = pageSize;
+                ViewBag.Search = search;
+
+                return View();
             }
             catch (Exception e)
             {
@@ -71,20 +69,18 @@ namespace SistemaGestionVentas.Controllers
                 var querySinFiltros = _context.Usuario;
                 var totalItems = await querySinFiltros.CountAsync();
                 var items = await querySinFiltros
+                    .OrderBy(u => u.Id)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                return View(
-                    new
-                    {
-                        Items = items,
-                        TotalItems = totalItems,
-                        PageNumber = pageNumber,
-                        PageSize = pageSize,
-                        Search = (string?)null,
-                    }
-                );
+                ViewBag.Items = items;
+                ViewBag.TotalItems = totalItems;
+                ViewBag.PageNumber = pageNumber;
+                ViewBag.PageSize = pageSize;
+                ViewBag.Search = (string?)null;
+
+                return View();
             }
         }
 
