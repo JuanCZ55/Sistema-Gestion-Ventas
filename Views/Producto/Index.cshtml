@@ -4,7 +4,6 @@
   ViewData["Title"] = "Productos";
 }
 
-<h1>Productos</h1>
 
 <p>
   <button type="button" class="btn btn-primary" onclick="openCreateModal()">Crear Nuevo</button>
@@ -64,12 +63,12 @@
           {
 
             <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-id="@item.Id"
-              data-estado="@item.Estado">Desactivar</button>
+                    data-estado="@item.Estado">Desactivar</button>
           }
           else
           {
             <button type="button" class="btn btn-sm btn-outline-success delete-btn" data-id="@item.Id"
-              data-estado="@item.Estado">Activar</button>
+                    data-estado="@item.Estado">Activar</button>
           }
 
         </td>
@@ -84,85 +83,85 @@
 
 @section Scripts {
   <script>
-    $(document).ready(function () {
-      // Los selects ya se cargan del lado servidor
+      $(document).ready(function () {
+        // Los selects ya se cargan del lado servidor
 
-      // Inicializar uploaders UNA SOLA VEZ
-      initImageUploader('create');
-      initImageUploader('edit');
+        // Inicializar uploaders UNA SOLA VEZ
+        initImageUploader('create');
+        initImageUploader('edit');
 
-      // Abrir modal para create
-      window.openCreateModal = function () {
-        $('#createForm')[0].reset();
-        $('#create_Estado').prop('checked', true);
-        if (window.clearPreview_create) window.clearPreview_create();
-        const modal = new bootstrap.Modal(document.getElementById('createModal'));
-        modal.show();
-      };
-
-      // Abrir modal para edit
-      window.openEditModal = function (id) {
-        if (window.clearPreview_edit) window.clearPreview_edit();
-        loadData(id);
-        const modal = new bootstrap.Modal(document.getElementById('editModal'));
-        modal.show();
-      };
-
-      function loadData(id) {
-        $.get('/Producto/Details/' + id, function (data) {
-          $('#edit_Id').val(data.id);
-          $('#edit_Codigo').val(data.codigo);
-          $('#edit_Nombre').val(data.nombre);
-          $('#edit_PrecioCosto').val(data.precioCosto);
-          $('#edit_PrecioVenta').val(data.precioVenta);
-          $('#edit_Stock').val(data.stock);
-          $('#edit_Pesable').prop('checked', data.pesable);
-          $('#edit_Estado').prop('checked', data.estado);
-          $('#edit_CategoriaId').val(data.categoriaId);
-          $('#edit_ProveedorId').val(data.proveedorId);
-          // Usar la API del uploader para setear imagen existente
-          if (typeof setEditImage === 'function') {
-            setEditImage(data.imagen);
-          }
-        });
-      }
-
-      // Delete modal
-      $('.delete-btn').on('click', function () {
-        var id = $(this).data('id');
-        var estado = $(this).data('estado');
-        $.get('/Producto/Details/' + id, function (data) {
-          // Poblar imagen
-          if (data.imagen) {
-            $('#deleteImageContainer').html('<img src="' + data.imagen + '" class="img-fluid rounded" style="max-width: 150px; max-height: 150px;" alt="Imagen del producto" />');
-          } else {
-            $('#deleteImageContainer').html('<div class="text-muted">Sin imagen</div>');
-          }
-
-          // Poblar campos de información
-          $('#delete_Codigo').text(data.codigo);
-          $('#delete_Nombre').text(data.nombre);
-          $('#delete_PrecioCosto').text('$' + parseFloat(data.precioCosto).toFixed(2));
-          $('#delete_PrecioVenta').text('$' + parseFloat(data.precioVenta).toFixed(2));
-          $('#delete_Stock').text(parseFloat(data.stock).toFixed(3));
-          $('#delete_Pesable').text(data.pesable ? 'Sí' : 'No');
-          $('#delete_EstadoActual').text(data.estado ? 'Activo' : 'Inactivo');
-          $('#delete_Categoria').text(data.categoriaNombre || 'N/A');
-          $('#delete_Proveedor').text(data.proveedorNombre || 'N/A');
-          $('#deleteButton').addClass(data.estado ? 'btn-danger' : 'btn-success');
-
-          $('#deleteText').addClass(data.estado ? 'text-danger' : 'text-success');
-
-          $('#estadoText').text(data.estado ? 'Inactivo' : 'Activo');
-          $('#deleteButton').addClass(data.estado ? 'btn-danger' : 'btn-success');
-          $('#deleteButton').text(data.estado ? 'Desactivar' : 'Activar');
-
-          $('#delete_Id').val(id);
-          const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        // Abrir modal para create
+        window.openCreateModal = function () {
+          $('#createForm')[0].reset();
+          $('#create_Estado').prop('checked', true);
+          if (window.clearPreview_create) window.clearPreview_create();
+          const modal = new bootstrap.Modal(document.getElementById('createModal'));
           modal.show();
-        });
-      });
+        };
 
-    });
+        // Abrir modal para edit
+        window.openEditModal = function (id) {
+          if (window.clearPreview_edit) window.clearPreview_edit();
+          loadData(id);
+          const modal = new bootstrap.Modal(document.getElementById('editModal'));
+          modal.show();
+        };
+
+        function loadData(id) {
+          $.get('/Producto/Details/' + id, function (data) {
+            $('#edit_Id').val(data.id);
+            $('#edit_Codigo').val(data.codigo);
+            $('#edit_Nombre').val(data.nombre);
+            $('#edit_PrecioCosto').val(data.precioCosto);
+            $('#edit_PrecioVenta').val(data.precioVenta);
+            $('#edit_Stock').val(data.stock);
+            $('#edit_Pesable').prop('checked', data.pesable);
+            $('#edit_Estado').prop('checked', data.estado);
+            $('#edit_CategoriaId').val(data.categoriaId);
+            $('#edit_ProveedorId').val(data.proveedorId);
+            // Usar la API del uploader para setear imagen existente
+            if (typeof setEditImage === 'function') {
+              setEditImage(data.imagen);
+            }
+          });
+        }
+
+        // Delete modal
+        $('.delete-btn').on('click', function () {
+          var id = $(this).data('id');
+          var estado = $(this).data('estado');
+          $.get('/Producto/Details/' + id, function (data) {
+            // Poblar imagen
+            if (data.imagen) {
+              $('#deleteImageContainer').html('<img src="' + data.imagen + '" class="img-fluid rounded" style="max-width: 150px; max-height: 150px;" alt="Imagen del producto" />');
+            } else {
+              $('#deleteImageContainer').html('<div class="text-muted">Sin imagen</div>');
+            }
+
+            // Poblar campos de información
+            $('#delete_Codigo').text(data.codigo);
+            $('#delete_Nombre').text(data.nombre);
+            $('#delete_PrecioCosto').text('$' + parseFloat(data.precioCosto).toFixed(2));
+            $('#delete_PrecioVenta').text('$' + parseFloat(data.precioVenta).toFixed(2));
+            $('#delete_Stock').text(parseFloat(data.stock).toFixed(3));
+            $('#delete_Pesable').text(data.pesable ? 'Sí' : 'No');
+            $('#delete_EstadoActual').text(data.estado ? 'Activo' : 'Inactivo');
+            $('#delete_Categoria').text(data.categoriaNombre || 'N/A');
+            $('#delete_Proveedor').text(data.proveedorNombre || 'N/A');
+            $('#deleteButton').addClass(data.estado ? 'btn-danger' : 'btn-success');
+
+            $('#deleteText').addClass(data.estado ? 'text-danger' : 'text-success');
+
+            $('#estadoText').text(data.estado ? 'Inactivo' : 'Activo');
+            $('#deleteButton').addClass(data.estado ? 'btn-danger' : 'btn-success');
+            $('#deleteButton').text(data.estado ? 'Desactivar' : 'Activar');
+
+            $('#delete_Id').val(id);
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+          });
+        });
+
+      });
   </script>
 }

@@ -1,50 +1,57 @@
-﻿@model IEnumerable<SistemaGestionVentas.Models.Usuario>
-
-@{
-  ViewData["Title"] = "Usuarios";
+﻿@{
+  ViewData["Title"] = "Gestión de Usuarios";
 }
 
-<h1>Gestión de Usuarios</h1>
 
-<p>
-  <button type="button" class="btn btn-primary" onclick="openCreateModal()">
-    Crear Nuevo
-  </button>
-</p>
+<!-- Formulario de filtros -->
+<form asp-action="Index" method="get" class="mb-3">
+  <div class="row">
+    <div class="col-md-5">
+      <button type="button" class="btn btn-primary" onclick="openCreateModal()">Crear Nuevo</button>
+    </div>
+    <div class="col-md-5">
+      <input type="text" name="search" value="@ViewBag.Search" class="form-control"
+             placeholder="Buscar por DNI, nombre, apellido o email..." />
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary">Filtrar</button>
+    </div>
+  </div>
+</form>
 
 <table class="table table-hover align-middle">
   <thead class="table-light">
     <tr>
       <th>Avatar</th>
-      <th>@Html.DisplayNameFor(model => model.DNI)</th>
+      <th>DNI</th>
       <th>Nombre Completo</th>
-      <th>@Html.DisplayNameFor(model => model.Email)</th>
-      <th>@Html.DisplayNameFor(model => model.Rol)</th>
-      <th>@Html.DisplayNameFor(model => model.Estado)</th>
+      <th>Email</th>
+      <th>Rol</th>
+      <th>Estado</th>
       <th>Acciones</th>
     </tr>
   </thead>
   <tbody>
-    @foreach (var item in Model)
+    @foreach (var item in ViewBag.Items)
     {
       <tr>
         <td>
           @if (!string.IsNullOrEmpty(item.Avatar))
           {
             <img src="@item.Avatar" alt="Avatar" class="rounded-circle border"
-              style="width: 45px; height: 45px; object-fit: cover;" />
+                 style="width: 45px; height: 45px; object-fit: cover;" />
           }
           else
           {
             <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white"
-              style="width: 45px; height: 45px;">
+                 style="width: 45px; height: 45px;">
               <i class="bi bi-person-fill h4 mb-0"></i>
             </div>
           }
         </td>
-        <td>@Html.DisplayFor(modelItem => item.DNI)</td>
+        <td>@item.DNI</td>
         <td>@item.Nombre @item.Apellido</td>
-        <td>@Html.DisplayFor(modelItem => item.Email)</td>
+        <td>@item.Email</td>
         <td>
           @if (item.Rol == 1)
           {
@@ -88,124 +95,158 @@
   </tbody>
 </table>
 
+@if (ViewBag.TotalItems > ViewBag.PageSize)
+{
+  <nav aria-label="Paginación de usuarios">
+    <ul class="pagination justify-content-center">
+      @{
+        int totalPages = (int)Math.Ceiling((double)ViewBag.TotalItems / ViewBag.PageSize);
+        int currentPage = ViewBag.PageNumber;
+        string search = ViewBag.Search ?? "";
+      }
+
+      @if (currentPage > 1)
+      {
+        <li class="page-item">
+          <a class="page-link" href="?pageNumber=@(currentPage - 1)&search=@search">Anterior</a>
+        </li>
+      }
+
+      @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+      {
+        <li class="page-item @(i == currentPage ? "active" : "")">
+          <a class="page-link" href="?pageNumber=@i&search=@search">@i</a>
+        </li>
+      }
+
+      @if (currentPage < totalPages)
+      {
+        <li class="page-item">
+          <a class="page-link" href="?pageNumber=@(currentPage + 1)&search=@search">Siguiente</a>
+        </li>
+      }
+    </ul>
+  </nav>
+}
+
 <partial name="_CreateModal" />
 <partial name="_EditModal" />
 <partial name="_DeleteModal" />
 
 @section Scripts {
   <script>
-    $(document).ready(function () {
-      // 1. Inicializar uploaders reutilizando tu script global
-      // Los IDs en los modales deben coincidir con lo esperado por image-uploader.js
-      initImageUploader('create');
-      initImageUploader('edit');
+                                    $(document).ready(function () {
+                                      // 1. Inicializar uploaders reutilizando tu script global
+                                      // Los IDs en los modales deben coincidir con lo esperado por image-uploader.js
+                                      initImageUploader('create');
+                                      initImageUploader('edit');
 
-      // --- Lógica del CREATE ---
-      window.openCreateModal = function () {
-        $('#createForm')[0].reset(); // Limpia inputs de texto
+                                      // --- Lógica del CREATE ---
+                                      window.openCreateModal = function () {
+                                        $('#createForm')[0].reset(); // Limpia inputs de texto
 
-        // Limpia la preview de imagen si existe la función en tu uploader
-        if (window.clearPreview_create) window.clearPreview_create();
+                                        // Limpia la preview de imagen si existe la función en tu uploader
+                                        if (window.clearPreview_create) window.clearPreview_create();
 
-        // Asegurar que el checkbox oculto de borrar esté en false
-        $('#create_BorrarImagen').val('false');
+                                        // Asegurar que el checkbox oculto de borrar esté en false
+                                        $('#create_BorrarImagen').val('false');
 
-        const modal = new bootstrap.Modal(document.getElementById('createModal'));
-        modal.show();
-      };
+                                        const modal = new bootstrap.Modal(document.getElementById('createModal'));
+                                        modal.show();
+                                      };
 
-      // --- Lógica del EDIT ---
-      window.openEditModal = function (id) {
-        // Limpiar preview anterior antes de cargar nuevos datos
-        if (window.clearPreview_edit) window.clearPreview_edit();
+                                      // --- Lógica del EDIT ---
+                                      window.openEditModal = function (id) {
+                                        // Limpiar preview anterior antes de cargar nuevos datos
+                                        if (window.clearPreview_edit) window.clearPreview_edit();
 
-        // Cargar datos del servidor
-        loadData(id);
+                                        // Cargar datos del servidor
+                                        loadData(id);
 
-        const modal = new bootstrap.Modal(document.getElementById('editModal'));
-        modal.show();
-      };
+                                        const modal = new bootstrap.Modal(document.getElementById('editModal'));
+                                        modal.show();
+                                      };
 
-      function loadData(id) {
-        $.get('/Usuario/Details/' + id, function (data) {
-          // Mapeo JSON -> Inputs del Formulario
-          $('#edit_Id').val(data.id);
-          $('#edit_DNI').val(data.dni);
-          $('#edit_Nombre').val(data.nombre);
-          $('#edit_Apellido').val(data.apellido);
-          $('#edit_Email').val(data.email);
-          $('#edit_Rol').val(data.rol);
+                                      function loadData(id) {
+                                        $.get('/Usuario/Details/' + id, function (data) {
+                                          // Mapeo JSON -> Inputs del Formulario
+                                          $('#edit_Id').val(data.id);
+                                          $('#edit_DNI').val(data.dni);
+                                          $('#edit_Nombre').val(data.nombre);
+                                          $('#edit_Apellido').val(data.apellido);
+                                          $('#edit_Email').val(data.email);
+                                          $('#edit_Rol').val(data.rol);
 
-          // IMPORTANTE: Limpiar password para evitar envíos accidentales
-          $('#edit_Pass').val('');
+                                          // IMPORTANTE: Limpiar password para evitar envíos accidentales
+                                          $('#edit_Pass').val('');
 
-          // Resetear el flag de borrar imagen
-          $('#edit_BorrarImagen').val('false');
+                                          // Resetear el flag de borrar imagen
+                                          $('#edit_BorrarImagen').val('false');
 
-          // Cargar imagen existente usando tu API de uploader
-          if (typeof setEditImage === 'function') {
-            setEditImage(data.avatar);
-          }
-        }).fail(function () {
-          alert("Error al cargar los datos del usuario. Intente nuevamente.");
-        });
-      }
+                                          // Cargar imagen existente usando tu API de uploader
+                                          if (typeof setEditImage === 'function') {
+                                            setEditImage(data.avatar);
+                                          }
+                                        }).fail(function () {
+                                          alert("Error al cargar los datos del usuario. Intente nuevamente.");
+                                        });
+                                      }
 
-      // --- Lógica del DELETE / ESTADO ---
-      $('.delete-btn').on('click', function () {
-        var id = $(this).data('id');
-        // Siempre consultamos datos frescos al servidor para evitar desincronización visual
-        $.get('/Usuario/Details/' + id, function (data) {
+                                      // --- Lógica del DELETE / ESTADO ---
+                                      $('.delete-btn').on('click', function () {
+                                        var id = $(this).data('id');
+                                        // Siempre consultamos datos frescos al servidor para evitar desincronización visual
+                                        $.get('/Usuario/Details/' + id, function (data) {
 
-          // 1. Renderizar Avatar en el modal
-          if (data.avatar) {
-            $('#deleteImageContainer').html(
-              `<img src="${data.avatar}" class="img-fluid rounded-circle shadow-sm" style="width: 100px; height: 100px; object-fit: cover;" alt="Avatar" />`
-            );
-          } else {
-            $('#deleteImageContainer').html(
-              `<div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 100px; height: 100px;">
-                  <i class="bi bi-person text-secondary h1 mb-0"></i>
-                 </div>`
-            );
-          }
+                                          // 1. Renderizar Avatar en el modal
+                                          if (data.avatar) {
+                                            $('#deleteImageContainer').html(
+                                              `<img src="${data.avatar}" class="img-fluid rounded-circle shadow-sm" style="width: 100px; height: 100px; object-fit: cover;" alt="Avatar" />`
+                                            );
+                                          } else {
+                                            $('#deleteImageContainer').html(
+                                              `<div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 100px; height: 100px;">
+                                                  <i class="bi bi-person text-secondary h1 mb-0"></i>
+                                                 </div>`
+                                            );
+                                          }
 
-          // 2. Llenar datos informativos
-          $('#delete_Id').val(data.id);
-          $('#delete_DNI').text(data.dni);
-          $('#delete_Nombre').text(data.nombre);
-          $('#delete_Apellido').text(data.apellido);
-          $('#delete_Rol').text(data.rol === 1 ? 'Administrador' : 'Empleado');
-          $('#delete_EstadoActual').text(data.estado ? 'Activo' : 'Inactivo');
+                                          // 2. Llenar datos informativos
+                                          $('#delete_Id').val(data.id);
+                                          $('#delete_DNI').text(data.dni);
+                                          $('#delete_Nombre').text(data.nombre);
+                                          $('#delete_Apellido').text(data.apellido);
+                                          $('#delete_Rol').text(data.rol === 1 ? 'Administrador' : 'Empleado');
+                                          $('#delete_EstadoActual').text(data.estado ? 'Activo' : 'Inactivo');
 
-          // 3. Configurar colores y textos según la acción a realizar
-          // Si está activo (true), la acción será desactivar (rojo)
-          // Si está inactivo (false), la acción será activar (verde)
-          const esActivo = data.estado;
+                                          // 3. Configurar colores y textos según la acción a realizar
+                                          // Si está activo (true), la acción será desactivar (rojo)
+                                          // Si está inactivo (false), la acción será activar (verde)
+                                          const esActivo = data.estado;
 
-          $('#estadoText').text(esActivo ? 'INACTIVO' : 'ACTIVO');
+                                          $('#estadoText').text(esActivo ? 'INACTIVO' : 'ACTIVO');
 
-          const btn = $('#deleteButton');
-          const txt = $('#deleteText');
+                                          const btn = $('#deleteButton');
+                                          const txt = $('#deleteText');
 
-          // Resetear clases
-          btn.removeClass('btn-danger btn-success');
-          txt.removeClass('text-danger text-success');
+                                          // Resetear clases
+                                          btn.removeClass('btn-danger btn-success');
+                                          txt.removeClass('text-danger text-success');
 
-          if (esActivo) {
-            // Configuración para DESACTIVAR
-            btn.addClass('btn-danger').text('Desactivar');
-            txt.addClass('text-danger');
-          } else {
-            // Configuración para ACTIVAR
-            btn.addClass('btn-success').text('Activar');
-            txt.addClass('text-success');
-          }
+                                          if (esActivo) {
+                                            // Configuración para DESACTIVAR
+                                            btn.addClass('btn-danger').text('Desactivar');
+                                            txt.addClass('text-danger');
+                                          } else {
+                                            // Configuración para ACTIVAR
+                                            btn.addClass('btn-success').text('Activar');
+                                            txt.addClass('text-success');
+                                          }
 
-          const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-          modal.show();
-        });
-      });
-    });
+                                          const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                                          modal.show();
+                                        });
+                                      });
+                                    });
   </script>
 }
