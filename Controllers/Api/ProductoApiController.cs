@@ -9,7 +9,6 @@ namespace SistemaGestionVentas.Controllers.Api
 {
     [ApiController]
     [Route("api/productos")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class ProductoApiController : ControllerBase
     {
         private readonly Context _context;
@@ -19,7 +18,40 @@ namespace SistemaGestionVentas.Controllers.Api
             _context = context;
         }
 
+        [HttpGet("searchjwt")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<IActionResult> SearchJWT([FromQuery] string q)
+        {
+            if (string.IsNullOrWhiteSpace(q) || q.Length < 1)
+            {
+                return BadRequest("El parámetro 'q' debe tener al menos 1 caracter.");
+            }
+
+            var productos = await _context
+                .Producto.AsNoTracking()
+                .Where(p =>
+                    p.Estado == true
+                    && (
+                        EF.Functions.Like(p.Codigo, $"%{q}%")
+                        || EF.Functions.Like(p.Nombre, $"%{q}%")
+                    )
+                )
+                .OrderBy(p => p.Nombre)
+                .Take(20)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Codigo,
+                    p.Nombre,
+                    p.PrecioVenta,
+                })
+                .ToListAsync();
+
+            return Ok(productos);
+        }
+
         [HttpGet("search")]
+        [Authorize]
         public async Task<IActionResult> Search([FromQuery] string q)
         {
             if (string.IsNullOrWhiteSpace(q) || q.Length < 1)
@@ -51,6 +83,7 @@ namespace SistemaGestionVentas.Controllers.Api
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetById(int id)
         {
             if (id <= 0)
