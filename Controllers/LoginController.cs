@@ -12,12 +12,10 @@ namespace SistemaGestionVentas.Controllers
     public class LoginController : Controller
     {
         private readonly Context _context;
-        private readonly JwtService _jwtService;
 
-        public LoginController(Context context, JwtService jwtService)
+        public LoginController(Context context)
         {
             _context = context;
-            _jwtService = jwtService;
         }
 
         [HttpGet("login")]
@@ -59,21 +57,7 @@ namespace SistemaGestionVentas.Controllers
                 new ClaimsPrincipal(identity)
             );
 
-            // Generar Token JWT para APIs
-            var token = _jwtService.GenerarToken(usuario);
-
-            // Almacenar token en cookie HttpOnly
-            Response.Cookies.Append(
-                "jwt",
-                token,
-                new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.UtcNow.AddHours(1),
-                }
-            );
+            // ya no generar ni guardar token en cookie
             TempData["ToastType"] = "success";
             TempData["ToastMessage"] = "Inicio de sesion exitoso.";
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
@@ -88,7 +72,6 @@ namespace SistemaGestionVentas.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            Response.Cookies.Delete("jwt");
             TempData["ToastType"] = "info";
             TempData["ToastMessage"] = "Cierre de sesion exitoso.";
             return RedirectToAction("Index", "Home");
