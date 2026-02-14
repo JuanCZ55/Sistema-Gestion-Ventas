@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SistemaGestionVentas.Data;
@@ -7,7 +8,8 @@ namespace SistemaGestionVentas.Controllers.Api
 {
     [Route("api/MotivoAjuste")]
     [ApiController]
-    public class MotivoAjusteApiController : ControllerBase
+    [Authorize(Policy = "Admin")]
+    public class MotivoAjusteApiController : BaseController
     {
         private readonly Context _context;
 
@@ -23,17 +25,13 @@ namespace SistemaGestionVentas.Controllers.Api
             try
             {
                 var lista = await _context.MotivoAjuste.OrderBy(m => m.Nombre).ToListAsync();
-                return Ok(new { data = lista });
+                return Ok(ApiResponse(true, "Actualizado", lista));
             }
             catch (Exception)
             {
                 return StatusCode(
                     500,
-                    new
-                    {
-                        success = false,
-                        message = "Error interno del servidor al obtener motivos de ajuste",
-                    }
+                    ApiResponse(false, "Error interno del servidor al obtener motivos de ajuste")
                 );
             }
         }
@@ -44,110 +42,129 @@ namespace SistemaGestionVentas.Controllers.Api
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(
-                    new { success = false, message = "Datos inválidos. Verifica los campos." }
-                );
+                var msj = "";
+                foreach (var modelState in ModelState.Values)
+                {
+                    foreach (var error in modelState.Errors)
+                    {
+                        msj += error.ErrorMessage + "<br>";
+                    }
+                }
+
+                return BadRequest(ApiResponse(false, msj));
             }
 
             try
             {
+                motivo.Nombre = motivo.Nombre.Trim().ToLower();
+                if (await isDuplicate(motivo.Nombre))
+                {
+                    return BadRequest(
+                        ApiResponse(false, "Ya existe un motivo de ajuste con ese nombre.")
+                    );
+                }
                 _context.MotivoAjuste.Add(motivo);
                 await _context.SaveChangesAsync();
 
-                return StatusCode(
-                    201,
-                    new { success = true, message = "Motivo de ajuste creado exitosamente." }
-                );
+                return StatusCode(201, ApiResponse(true, "Motivo de ajuste creado exitosamente."));
             }
             catch (Exception)
             {
                 return StatusCode(
                     500,
-                    new
-                    {
-                        success = false,
-                        message = "Error interno del servidor al crear motivo de ajuste",
-                    }
+                    ApiResponse(false, "Error interno del servidor al crear motivo de ajuste")
                 );
             }
         }
 
-        // PUT: api/MotivoAjuste/5
-        [HttpPut("{id}")]
+        // PATCH: api/MotivoAjuste/5
+        [HttpPatch("{id}")]
         public async Task<IActionResult> Update(int id, MotivoAjuste motivo)
         {
-            if (id != motivo.Id)
-                return BadRequest(new { success = false, message = "El ID no coincide" });
-
             if (!ModelState.IsValid)
-                return BadRequest(new { success = false, message = "Datos inválidos" });
+            {
+                var msj = "";
+                foreach (var modelState in ModelState.Values)
+                {
+                    foreach (var error in modelState.Errors)
+                    {
+                        msj += error.ErrorMessage + "<br>";
+                    }
+                }
+                return BadRequest(ApiResponse(false, msj));
+            }
 
             try
             {
                 var existente = await _context.MotivoAjuste.FindAsync(id);
                 if (existente == null)
-                    return NotFound(
-                        new { success = false, message = "Motivo de ajuste no encontrado" }
-                    );
+                    return NotFound(ApiResponse(false, "Motivo de ajuste no encontrado"));
 
-                existente.Nombre = motivo.Nombre;
-                existente.Descripcion = motivo.Descripcion;
-                existente.Estado = motivo.Estado;
+                if (!string.IsNullOrEmpty(motivo.Nombre))
+                {
+                    motivo.Nombre = motivo.Nombre.Trim().ToLower();
+                    if (await isDuplicate(motivo.Nombre, id))
+                    {
+                        return BadRequest(
+                            ApiResponse(false, "Ya existe un motivo de ajuste con ese nombre.")
+                        );
+                    }
+                    existente.Nombre = motivo.Nombre;
+                }
+
+                if (motivo.Descripcion != null)
+                {
+                    existente.Descripcion = motivo.Descripcion;
+                }
 
                 await _context.SaveChangesAsync();
 
-                return Ok(
-                    new { success = true, message = "Motivo de ajuste actualizado correctamente" }
-                );
+                return Ok(ApiResponse(true, "Motivo de ajuste actualizado correctamente"));
             }
             catch (DbUpdateConcurrencyException)
             {
-                return Conflict(new { success = false, message = "Conflicto de concurrencia" });
+                return Conflict(ApiResponse(false, "Conflicto de concurrencia"));
             }
             catch (Exception)
             {
                 return StatusCode(
                     500,
-                    new
-                    {
-                        success = false,
-                        message = "Error interno del servidor al actualizar motivo de ajuste",
-                    }
+                    ApiResponse(false, "Error interno del servidor al actualizar motivo de ajuste")
                 );
             }
         }
 
-        // DELETE: api/MotivoAjuste/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        // PATCH: api/MotivoAjuste/5/Estado
+        [HttpPatch("{id}/Estado")]
+        public async Task<IActionResult> Estado(int id)
         {
             try
             {
                 var motivo = await _context.MotivoAjuste.FindAsync(id);
                 if (motivo == null)
                 {
-                    return NotFound(
-                        new { success = false, message = "Motivo de ajuste no encontrado." }
-                    );
+                    return NotFound(ApiResponse(false, "Motivo de ajuste no encontrado."));
                 }
 
-                motivo.Estado = false;
+                motivo.Estado = !motivo.Estado;
                 _context.Update(motivo);
                 await _context.SaveChangesAsync();
 
                 return Ok(
-                    new { success = true, message = "Motivo de ajuste desactivado exitosamente." }
+                    ApiResponse(
+                        true,
+                        $"Motivo de ajuste {(motivo.Estado ? "activado" : "desactivado")} exitosamente."
+                    )
                 );
             }
             catch (Exception)
             {
                 return StatusCode(
                     500,
-                    new
-                    {
-                        success = false,
-                        message = "Error interno del servidor al eliminar motivo de ajuste",
-                    }
+                    ApiResponse(
+                        false,
+                        "Error interno del servidor al cambiar estado del motivo de ajuste"
+                    )
                 );
             }
         }
@@ -160,20 +177,27 @@ namespace SistemaGestionVentas.Controllers.Api
             {
                 var motivo = await _context.MotivoAjuste.FindAsync(id);
                 if (motivo == null)
-                    return NotFound();
-                return Ok(motivo);
+                    return NotFound(ApiResponse(false, "Motivo de ajuste no encontrado"));
+                return Ok(ApiResponse(true, "Motivo de ajuste obtenido exitosamente", motivo));
             }
             catch (Exception)
             {
                 return StatusCode(
                     500,
-                    new
-                    {
-                        success = false,
-                        message = "Error interno del servidor al obtener motivo de ajuste por ID",
-                    }
+                    ApiResponse(
+                        false,
+                        "Error interno del servidor al obtener motivo de ajuste por ID"
+                    )
                 );
             }
+        }
+
+        async Task<bool> isDuplicate(string nombre, int? excludeId = null)
+        {
+            nombre = nombre.Trim().ToLower();
+            return await _context.MotivoAjuste.AnyAsync(m =>
+                m.Nombre == nombre && (excludeId == null || m.Id != excludeId)
+            );
         }
     }
 }
