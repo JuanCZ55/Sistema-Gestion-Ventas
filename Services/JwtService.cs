@@ -40,7 +40,7 @@ namespace SistemaGestionVentas.Services
                 issuer: issuer,
                 audience: audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(60),
+                expires: DateTime.UtcNow.AddMinutes(5),
                 signingCredentials: creds
             );
 

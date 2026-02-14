@@ -54,6 +54,33 @@ builder
         options.LoginPath = "/Login";
         options.LogoutPath = "/Login/Logout";
         options.AccessDeniedPath = "/Home/Denied";
+
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnRedirectToLogin = context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api"))
+                {
+                    context.Response.StatusCode = 401;
+                    return Task.CompletedTask;
+                }
+
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            },
+
+            OnRedirectToAccessDenied = context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/api"))
+                {
+                    context.Response.StatusCode = 403;
+                    return Task.CompletedTask;
+                }
+
+                context.Response.Redirect(context.RedirectUri);
+                return Task.CompletedTask;
+            },
+        };
     })
     .AddJwtBearer(options =>
     {
@@ -66,13 +93,18 @@ builder
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+            RoleClaimType = ClaimTypes.Role,
         };
         options.Events = new JwtBearerEvents
         {
-            OnMessageReceived = context =>
+            OnChallenge = context =>
             {
-                context.Token = context.Request.Cookies["jwt"];
-                return Task.CompletedTask;
+                context.HandleResponse();
+                context.Response.StatusCode = 401;
+                context.Response.ContentType = "application/json";
+                return context.Response.WriteAsJsonAsync(
+                    new { message = "Token invalido o expirado" }
+                );
             },
         };
     });
