@@ -7,4 +7,14 @@ public class BaseController : Controller
         TempData["ToastMessage"] = message;
         TempData["ToastType"] = type;
     }
+
+    protected object ApiResponse(bool success, string message, object? data = null)
+    {
+        return new
+        {
+            success,
+            message,
+            data,
+        };
+    }
 }
