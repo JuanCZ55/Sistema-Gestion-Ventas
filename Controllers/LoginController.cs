@@ -9,7 +9,7 @@ using SistemaGestionVentas.Services;
 
 namespace SistemaGestionVentas.Controllers
 {
-    public class LoginController : Controller
+    public class LoginController : BaseController
     {
         private readonly Context _context;
 
@@ -26,10 +26,19 @@ namespace SistemaGestionVentas.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index(LoginViewModel model, string returnUrl)
+        public async Task<IActionResult> Index(LoginViewModel model, string? returnUrl)
         {
             if (!ModelState.IsValid)
             {
+                var msj = "";
+                foreach (var modelState in ModelState.Values)
+                {
+                    foreach (var error in modelState.Errors)
+                    {
+                        msj += error.ErrorMessage + "<br>";
+                    }
+                }
+                Notify(msj, "danger");
                 return View(model);
             }
             // Validar usuario en BD
@@ -37,8 +46,7 @@ namespace SistemaGestionVentas.Controllers
 
             if (usuario == null || !BCrypt.Net.BCrypt.Verify(model.Password, usuario.Pass))
             {
-                TempData["ToastType"] = "danger";
-                TempData["ToastMessage"] = "Credenciales invalidas.";
+                Notify("Credenciales inválidas", "danger");
                 return RedirectToAction("Index");
             }
             // Crear Cookie para MVC
@@ -58,8 +66,7 @@ namespace SistemaGestionVentas.Controllers
             );
 
             // ya no generar ni guardar token en cookie
-            TempData["ToastType"] = "success";
-            TempData["ToastMessage"] = "Inicio de sesion exitoso.";
+            Notify("Inicio de sesion exitoso.", "success");
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
@@ -72,8 +79,7 @@ namespace SistemaGestionVentas.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            TempData["ToastType"] = "info";
-            TempData["ToastMessage"] = "Cierre de sesion exitoso.";
+            Notify("Cierre de sesion exitoso.", "info");
             return RedirectToAction("Index", "Home");
         }
     }
