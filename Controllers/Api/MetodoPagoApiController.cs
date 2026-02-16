@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using SistemaGestionVentas.Data;
 using SistemaGestionVentas.Models;
 
@@ -25,7 +24,7 @@ namespace SistemaGestionVentas.Controllers.Api
         {
             try
             {
-                var lista = await _context.MetodoPago.OrderBy(m => m.Nombre).ToListAsync();
+                var lista = await _context.MetodoPago.OrderBy(m => m.Id).ToListAsync();
 
                 return Ok(ApiResponse(true, "Metodos de pago obtenidos exitosamente", lista));
             }
@@ -55,7 +54,6 @@ namespace SistemaGestionVentas.Controllers.Api
 
                 return BadRequest(ApiResponse(false, msj));
             }
-
             try
             {
                 metodo.Nombre = metodo.Nombre.Trim().ToLower();
@@ -96,24 +94,20 @@ namespace SistemaGestionVentas.Controllers.Api
 
                 return BadRequest(ApiResponse(false, msj));
             }
-
             try
             {
                 var existente = await _context.MetodoPago.FindAsync(id);
                 if (existente == null)
                     return NotFound(ApiResponse(false, "No encontrado"));
 
-                if (!string.IsNullOrEmpty(metodo.Nombre))
+                metodo.Nombre = metodo.Nombre.Trim().ToLower();
+                if (await isDuplicate(metodo.Nombre, id))
                 {
-                    metodo.Nombre = metodo.Nombre.Trim().ToLower();
-                    if (await isDuplicate(metodo.Nombre, id))
-                    {
-                        return BadRequest(
-                            ApiResponse(false, "Ya existe un metodo de pago con ese nombre.")
-                        );
-                    }
-                    existente.Nombre = metodo.Nombre;
+                    return BadRequest(
+                        ApiResponse(false, "Ya existe un metodo de pago con ese nombre.")
+                    );
                 }
+                existente.Nombre = metodo.Nombre;
 
                 await _context.SaveChangesAsync();
 
@@ -190,7 +184,7 @@ namespace SistemaGestionVentas.Controllers.Api
             }
         }
 
-        async Task<bool> isDuplicate(string nombre, int? excludeId = null)
+        private async Task<bool> isDuplicate(string nombre, int? excludeId = null)
         {
             nombre = nombre.Trim().ToLower();
             return await _context.MetodoPago.AnyAsync(m =>
