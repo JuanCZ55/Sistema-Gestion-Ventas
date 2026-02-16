@@ -6,7 +6,7 @@ namespace SistemaGestionVentas.Models
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Ingrese el nombre del método de pago")]
+        [Required(ErrorMessage = "Ingrese el nombre del metodo de pago")]
         public string Nombre { get; set; } = null!;
 
         [Required(ErrorMessage = "Ingrese el estado del método de pago")]
