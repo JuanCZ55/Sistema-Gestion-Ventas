@@ -1,41 +1,287 @@
-﻿@model IEnumerable<SistemaGestionVentas.Models.MetodoPago>
-
-@{
-    ViewData["Title"] = "Index";
+﻿@{
+  ViewData["Title"] = "Metodos de pago";
 }
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<h1>Index</h1>
+<div id="app">
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <button type="button" class="btn btn-primary" v-on:click="abrirModalCrear">Crear nuevo</button>
+    </div>
+  </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
+  <table class="table table-striped" id="tablaMetodosPago">
     <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Nombre)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Estado)
-            </th>
-            <th></th>
-        </tr>
+      <tr>
+        <th>Nombre</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Nombre)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Estado)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
+      <tr v-for="m in metodos" :key="m.id">
+        <td class="text-capitalize">{{ m.nombre }}</td>
+        <td>
+          <span :class="['badge', m.estado ? 'bg-success' : 'bg-danger']">
+            {{ m.estado ? 'Activo' : 'Inactivo' }}
+          </span>
+        </td>
+        <td class="d-flex gap-1">
+          <button type="button" class="btn btn-sm btn-outline-warning" v-on:click="abrirModalEditar(m)">Editar</button>
+          <button type="button" class="btn btn-sm" :class="m.estado ? 'btn-outline-danger' : 'btn-outline-success'"
+                  v-on:click="abrirModalEstado(m)">
+            {{ m.estado ? 'Desactivar' : 'Activar' }}
+          </button>
+        </td>
+      </tr>
     </tbody>
-</table>
+  </table>
+
+  <!-- modalEstado (solo 1) -->
+  <div class="modal fade" id="modalEstado" tabindex="-1" aria-labelledby="modalEstadoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalEstadoLabel">{{ modalEstado.titulo }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p>¿Esta seguro que desea {{ modalEstado.accion }} el metodo de pago <b>{{ modalEstado.nombre }}</b>?</p>
+          <div v-if="modalEstado.msj" class="alert mt-3" :class="modalEstado.exito ? 'alert-success' : 'alert-danger'">
+            {{ modalEstado.msj }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn" :class="modalEstado.estado ? 'btn-danger' : 'btn-success'"
+                  v-on:click="confirmarCambioEstado">{{ modalEstado.accion }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- modalMetodo (solo 1) -->
+  <div class="modal fade" id="modalMetodo" tabindex="-1" aria-labelledby="modalMetodoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalMetodoLabel">{{ modal.titulo }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <form v-on:submit.prevent="guardarMetodo">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="nombre" class="form-label">Nombre</label>
+              <input type="text" class="form-control" id="nombre" v-model="modal.metodo.nombre" maxlength="50">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div> <!-- cierre #app -->
+
+<!-- incluye bootstrap JS antes de tu script para que 'bootstrap' exista -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  const { createApp, ref, reactive, onMounted } = Vue;
+
+  // helper para parseo seguro
+  const safeParse = async (res) => {
+  try {
+  return await res.json();
+  } catch {
+  return { success: res.ok, message: res.statusText || 'Sin contenido' };
+  }
+  };
+
+  createApp({
+  setup() {
+  const metodos = ref([]);
+  const mensaje = reactive({ texto: '', exito: true });
+  const modal = reactive({
+  metodo: { id: 0, nombre: '', estado: true },
+  titulo: '',
+  error: ''
+  });
+  const modalEstado = reactive({
+  id: null,
+  nombre: '',
+  estado: false,
+  accion: '',
+  titulo: '',
+  msj: '',
+  exito: true
+  });
+  let modalEstadoInstance = null;
+  let modalInstance = null;
+
+  const abrirModalEstado = (m) => {
+  if (!m || !m.id) return;
+  Object.assign(modalEstado, {
+  id: m.id,
+  nombre: m.nombre,
+  estado: m.estado,
+  accion: m.estado ? 'Desactivar' : 'Activar',
+  titulo: m.estado ? 'Desactivar metodo de pago' : 'Activar metodo de pago',
+  msj: '',
+  exito: true
+  });
+  if (modalEstadoInstance) {
+  modalEstadoInstance.show();
+  } else {
+  console.warn('modalEstadoInstance no inicializado');
+  }
+  };
+
+  const confirmarCambioEstado = async () => {
+  try {
+  const res = await fetch(`/api/MetodoPago/${modalEstado.id}/Estado`, { method: 'PATCH' });
+  const data = await safeParse(res);
+  if (!res.ok) {
+  modalEstado.msj = data.message || `HTTP ${res.status}`;
+  modalEstado.exito = false;
+  window.showToast('danger', modalEstado.msj);
+  return;
+  }
+  modalEstado.msj = data.message || (data.success ? 'Operacion exitosa' : 'Ocurrio un error');
+  modalEstado.exito = !!data.success;
+  if (data.success) {
+  window.showToast('success', data.message);
+  await cargarMetodos();
+  setTimeout(() => {
+  if (modalEstadoInstance) modalEstadoInstance.hide();
+  }, 600);
+  } else {
+  window.showToast('danger', data.message || 'Error al cambiar estado.');
+  }
+  } catch (e) {
+  console.error(e);
+  modalEstado.msj = 'Error al cambiar estado';
+  modalEstado.exito = false;
+  window.showToast('danger', 'Error al cambiar estado');
+  }
+  };
+
+  const cargarMetodos = async () => {
+  try {
+  const res = await fetch('/api/MetodoPago');
+  const data = await safeParse(res);
+  if (!res.ok) {
+  window.showToast('danger', data.message || `HTTP ${res.status}`);
+  return;
+  }
+  if (data && data.success) {
+  metodos.value = data.data;
+  } else {
+  // fallback si backend devuelve un array directamente
+  if (Array.isArray(data)) metodos.value = data;
+  }
+  } catch (e) {
+  console.error(e);
+  window.showToast('danger', 'Error al cargar metodos de pago');
+  }
+  };
+
+  const abrirModalCrear = () => {
+  modal.titulo = 'Nuevo metodo de pago';
+  Object.assign(modal.metodo, { id: 0, nombre: '', estado: true });
+  modal.error = '';
+  if (modalInstance) modalInstance.show(); else console.warn('modalInstance no inicializado');
+  };
+
+  const abrirModalEditar = (m) => {
+  modal.titulo = 'Editar metodo de pago';
+  Object.assign(modal.metodo, { id: m.id, nombre: m.nombre, estado: m.estado });
+  modal.error = '';
+  if (modalInstance) modalInstance.show(); else console.warn('modalInstance no inicializado');
+  };
+
+  const guardarMetodo = async () => {
+  modal.error = '';
+  const nombre = (modal.metodo.nombre || '').trim();
+  if (!nombre) {
+  modal.error = 'Ingrese nombre';
+  window.showToast('danger', modal.error);
+  return;
+  }
+
+  try {
+  const url = modal.metodo.id === 0 ? '/api/MetodoPago' : `/api/MetodoPago/${modal.metodo.id}`;
+  const method = modal.metodo.id === 0 ? 'POST' : 'PATCH';
+  const res = await fetch(url, {
+  method,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ nombre })
+  });
+  const data = await safeParse(res);
+  if (!res.ok) {
+  const msg = data.message || `HTTP ${res.status}`;
+  window.showToast('danger', msg);
+  modal.error = msg;
+  return;
+  }
+  if (data && data.success) {
+  window.showToast('success', data.message);
+  await cargarMetodos();
+  if (modalInstance) modalInstance.hide();
+  } else {
+  let errorMsg = '';
+  if (data.errors && data.errors.Nombre) {
+  errorMsg = Array.isArray(data.errors.Nombre) ? data.errors.Nombre.join('\\n') : data.errors.Nombre;
+  } else if (data.message) {
+  errorMsg = data.message;
+  } else if (typeof data === 'string') {
+  errorMsg = data;
+  } else {
+  errorMsg = 'Error en la operacion';
+  }
+  modal.error = errorMsg;
+  window.showToast('danger', errorMsg);
+  }
+  } catch (e) {
+  console.error(e);
+  modal.error = 'Error en la operacion';
+  window.showToast('danger', 'Error en la operacion');
+  }
+  };
+
+  onMounted(() => {
+  // inicializa Bootstrap modal solo si la libreria esta cargada
+  const elEstado = document.getElementById('modalEstado');
+  if (elEstado && typeof bootstrap !== 'undefined') {
+  modalEstadoInstance = new bootstrap.Modal(elEstado);
+  } else if (!elEstado) {
+  console.warn('#modalEstado no encontrado en DOM');
+  } else {
+  console.warn('bootstrap no definido, no se inicializan modales bootstrap');
+  }
+
+  const elMetodo = document.getElementById('modalMetodo');
+  if (elMetodo && typeof bootstrap !== 'undefined') {
+  modalInstance = new bootstrap.Modal(elMetodo);
+  }
+
+  cargarMetodos();
+  });
+
+  return {
+  metodos,
+  mensaje,
+  modal,
+  modalEstado,
+  abrirModalCrear,
+  abrirModalEditar,
+  guardarMetodo,
+  abrirModalEstado,
+  confirmarCambioEstado
+  };
+  }
+  }).mount('#app');
+</script>

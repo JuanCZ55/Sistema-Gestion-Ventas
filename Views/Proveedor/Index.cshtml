@@ -13,8 +13,6 @@
 
 
 <div id="app">
-
-
     <form asp-action="Index" method="get" class="mb-3">
         <div class="row g-2">
             <div class="col-md-4">
@@ -32,7 +30,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                <button type="submit" class="btn btn-success w-100">Filtrar</button>
             </div>
         </div>
     </form>
@@ -65,8 +63,8 @@
                         else { <span class="badge bg-danger">Inactivo</span> }
                     </td>
                     <td class="d-flex gap-1">
-                        <button type="button" class="btn btn-sm btn-outline-info" @@click="openModal('view', @p.Id)">Ver</button> 
                         <button type="button" class="btn btn-sm btn-outline-warning" @@click="openModal('edit', @p.Id)">Editar</button> 
+                        <button type="button" class="btn btn-sm btn-outline-info" @@click="openModal('view', @p.Id)">Ver</button> 
 
                         @if (User.IsInRole("1"))
                         {
