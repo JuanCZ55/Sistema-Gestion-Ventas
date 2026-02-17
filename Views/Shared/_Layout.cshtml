@@ -38,9 +38,12 @@
   @if (TempData["ToastMessage"] != null)
   {
     <script>
-      showToast('@TempData["ToastType"]', '@Html.Raw(TempData["ToastMessage"])');
+      const toastType = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastType"]));
+      const toastMessage = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["ToastMessage"]));
+      showToast(toastType, toastMessage);
     </script>
   }
+
   @await RenderSectionAsync("Scripts", required: false)
 </body>
 
