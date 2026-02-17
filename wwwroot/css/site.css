@@ -130,10 +130,11 @@ body {
 }
 
 /* --- Estilos para el componente de imagen --- */
-/* Contenedor de la vista previa de imagen: tamaño fijo, centrado, con borde */
+/* Contenedor de la vista previa de imagen: responsivo, centrado, con borde */
 .image-preview-container {
   position: relative;
-  width: 375px;
+  width: 100%;
+  max-width: 375px;
   height: 300px;
   display: flex;
   align-items: center;
@@ -142,6 +143,7 @@ body {
   border: 1px solid #e3e3e3;
   border-radius: 6px;
   overflow: hidden;
+  margin: 0 auto;
 }
 
 /* Imagen dentro del contenedor: ajusta al 100% con object-fit para preservar aspecto */
@@ -160,7 +162,8 @@ body {
   z-index: 5;
 }
 
-/* Input de archivo: mismo ancho que la preview */
+/* Input de archivo: responsivo, máximo 375px */
 .image-input {
-  width: 375px;
+  width: 100%;
+  max-width: 375px;
 }
