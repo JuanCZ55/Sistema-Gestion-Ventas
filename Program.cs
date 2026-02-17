@@ -54,6 +54,7 @@ builder
         options.LoginPath = "/Login";
         options.LogoutPath = "/Login/Logout";
         options.AccessDeniedPath = "/Home/Denied";
+        options.ExpireTimeSpan = TimeSpan.FromHours(9);
 
         options.Events = new CookieAuthenticationEvents
         {
@@ -127,12 +128,39 @@ var app = builder.Build();
 // Pipeline de middleware
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            var exceptionFeature =
+                context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = 500;
+                context.Response.ContentType = "application/json";
+
+                await context.Response.WriteAsJsonAsync(
+                    new { success = false, message = "Error interno del servidor" }
+                );
+
+                return;
+            }
+
+            context.Response.Redirect("/Home/Error");
+        });
+    });
 }
 
 // Archivos estáticos
 app.UseStaticFiles();
-app.UseStatusCodePagesWithReExecute("/Home/Error404");
+app.UseWhen(
+    ctx => !ctx.Request.Path.StartsWithSegments("/api"),
+    appBuilder =>
+    {
+        appBuilder.UseStatusCodePagesWithReExecute("/Home/Error404");
+    }
+);
 
 app.UseRouting();
 
