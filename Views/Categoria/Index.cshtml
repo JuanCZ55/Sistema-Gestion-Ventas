@@ -48,25 +48,34 @@
         }
         else
         {
-          <span class="badge bg-danger">Anulada</span>
+          <span class="badge bg-danger">Inactiva</span>
         }
       </td>
+
       <td>
 
         @if (c.Estado)
         {
           <button type="button" class="btn btn-sm btn-outline-warning" onclick="openEditModal(this)">Editar</button>
-          <button type="button" class="btn btn-sm btn-outline-danger"
-                  onclick="openEstadoModal(@c.Id, '@c.Nombre', false)">Desactivar</button>
+          @if (User.IsInRole("1"))
+          {
+            <button type="button" class="btn btn-sm btn-outline-danger"
+                    onclick="openEstadoModal(@c.Id, '@c.Nombre', false)">Desactivar</button>
+          }
+
         }
         else
         {
           <button type="button" class="btn btn-sm btn-outline-secondary" disabled>Editar</button>
-          <button type="button" class="btn btn-sm btn-outline-success"
-                  onclick="openEstadoModal(@c.Id, '@c.Nombre', true)">Activar</button>
+          @if (User.IsInRole("1"))
+          {
+            <button type="button" class="btn btn-sm btn-outline-success"
+                    onclick="openEstadoModal(@c.Id, '@c.Nombre', true)">Activar</button>
+          }
         }
 
       </td>
+
     </tr>
   }
 </tbody>
