@@ -135,10 +135,10 @@ namespace SistemaGestionVentas.Controllers
             if (!ModelState.IsValid)
             {
                 var msj = string.Join(
-                    "\n",
+                    "<br>",
                     ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
                 );
-                Notify("Verifique los datos: " + msj, "danger");
+                Notify(msj, "danger");
                 return RedirectToAction(nameof(Index));
             }
             if (string.IsNullOrEmpty(usuario.Pass))
@@ -193,12 +193,11 @@ namespace SistemaGestionVentas.Controllers
 
         // POST: Usuario/Edit/5
         [HttpPost]
-        [Authorize(Policy = "Vendedor")]
+        [Authorize(Policy = "Admin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
             [Bind("Id,DNI,Nombre,Apellido,Email,Pass,Avatar,Favatar,Rol")] Usuario usuario,
-            bool BorrarAvatar = false,
-            string? PassActual = null // para empleados
+            bool BorrarAvatar = false
         )
         {
             if (!ModelState.IsValid)
@@ -223,32 +222,6 @@ namespace SistemaGestionVentas.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Unificar lógica para empleados (rol 2)
-            var userRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
-            var userIdClaim = User
-                .Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)
-                ?.Value;
-            if (userRole == "2")
-            {
-                // Solo puede editar su propio perfil
-                if (userIdClaim == null || exUsuario.Id.ToString() != userIdClaim)
-                {
-                    Notify("No tiene permiso para editar otros perfiles.", "danger");
-                    return RedirectToAction(nameof(Index));
-                }
-                // Verificar contraseña actual
-                if (
-                    string.IsNullOrEmpty(PassActual)
-                    || !BCrypt.Net.BCrypt.Verify(PassActual, exUsuario.Pass)
-                )
-                {
-                    Notify("Contraseña actual incorrecta.", "danger");
-                    return RedirectToAction(nameof(Index));
-                }
-                // No permitir modificar el rol
-                usuario.Rol = exUsuario.Rol;
-            }
-
             bool duplicado = await _context.Usuario.AnyAsync(u =>
                 (u.DNI == usuario.DNI || u.Email == usuario.Email) && u.Id != usuario.Id
             );
@@ -263,7 +236,7 @@ namespace SistemaGestionVentas.Controllers
             exUsuario.Apellido = usuario.Apellido.Trim().ToLower();
             exUsuario.Email = usuario.Email;
             exUsuario.Rol = usuario.Rol;
-            //-/Imagen Avatar
+            // Procesar avatar
             if (usuario.Favatar != null)
             {
                 if (!string.IsNullOrEmpty(exUsuario.Avatar))
@@ -299,7 +272,7 @@ namespace SistemaGestionVentas.Controllers
                 }
                 exUsuario.Avatar = null;
             }
-            //-/Imagen Avatar
+            // Procesar password
             if (!string.IsNullOrEmpty(usuario.Pass))
             {
                 exUsuario.Pass = BCrypt.Net.BCrypt.HashPassword(usuario.Pass);
@@ -358,6 +331,49 @@ namespace SistemaGestionVentas.Controllers
             {
                 Notify("Error al cambiar el estado del usuario: " + e.Message, "danger");
                 return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Policy = "Vendedor")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            try
+            {
+                int idUsuario = 0;
+                if (User.IsInRole("2"))
+                {
+                    idUsuario = int.Parse(
+                        User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value
+                        ?? "0"
+                    );
+                }
+                if (idUsuario > 0 && id != idUsuario)
+                {
+                    return StatusCode(
+                        403,
+                        new { error = "No tienes permisos para consultar otros perfiles." }
+                    );
+                }
+                var usuario = await _context.Usuario.FindAsync(id);
+                if (usuario == null)
+                {
+                    return NotFound();
+                }
+                var usa = new
+                {
+                    usuario.Id,
+                    usuario.DNI,
+                    usuario.Nombre,
+                    usuario.Apellido,
+                    usuario.Email,
+                    usuario.Avatar,
+                };
+                return Json(usa);
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, new { error = "Error al obtener el usuario: " + e.Message });
             }
         }
     }
