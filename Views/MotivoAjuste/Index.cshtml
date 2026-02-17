@@ -1,47 +1,266 @@
-﻿@model IEnumerable<SistemaGestionVentas.Models.MotivoAjuste>
-
-@{
-    ViewData["Title"] = "Index";
+﻿@{
+    ViewData["Title"] = "Motivos de ajuste";
 }
 
-<h1>Index</h1>
+<div id="app">
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <button type="button" class="btn btn-primary" v-on:click="abrirModalCrear">Crear nuevo</button>
+        </div>
+    </div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Nombre)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Descripcion)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Estado)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Nombre)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Descripcion)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Estado)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
+    <table class="table table-striped" id="tablaMotivosAjuste">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="m in motivos" :key="m.id">
+                <td class="text-capitalize">{{ m.nombre }}</td>
+                <td>{{ m.descripcion }}</td>
+                <td>
+                    <span :class="['badge', m.estado ? 'bg-success' : 'bg-danger']">
+                        {{ m.estado ? 'Activo' : 'Inactivo' }}
+                    </span>
+                </td>
+                <td class="d-flex gap-1">
+                    <button type="button" class="btn btn-sm btn-outline-warning" v-on:click="abrirModalEditar(m)">Editar</button>
+                    <button type="button" class="btn btn-sm" :class="m.estado ? 'btn-outline-danger' : 'btn-outline-success'"
+                        v-on:click="abrirModalEstado(m)">
+                        {{ m.estado ? 'Desactivar' : 'Activar' }}
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ modalEstado.titulo }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro que desea {{ modalEstado.accion }} el motivo de ajuste <b>{{ modalEstado.nombre }}</b>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" :disabled="modalEstado.loading">Cancelar</button>
+                        <button type="button" class="btn" :class="modalEstado.estado ? 'btn-danger' : 'btn-success'"
+                            v-on:click="confirmarCambioEstado" :disabled="modalEstado.loading">
+                        <span v-if="modalEstado.loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span v-else>{{ modalEstado.accion }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalMotivo" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ modal.titulo }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <form v-on:submit.prevent="guardarMotivo" novalidate>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" v-model="modal.motivo.nombre" maxlength="50" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="descripcion" v-model="modal.motivo.descripcion" maxlength="200"></textarea>
+                        </div>
+                        <div v-if="modal.error" class="text-danger small">{{ modal.error }}</div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const safeParse = async (res) => {
+        try {
+            return await res.json();
+        } catch {
+            return { success: res.ok, message: res.statusText || 'Sin contenido' };
+        }
+    };
+
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                motivos: [],
+                modal: {
+                    motivo: { id: 0, nombre: '', descripcion: '', estado: true },
+                    titulo: '',
+                    error: ''
+                },
+                modalEstado: {
+                    id: null,
+                    nombre: '',
+                    estado: false,
+                    accion: '',
+                    titulo: '',
+                    loading: false
+                },
+                bsModalInstance: null,
+                bsModalEstadoInstance: null
+            };
+        },
+        mounted() {
+            const elMotivo = document.getElementById('modalMotivo');
+            if (elMotivo) this.bsModalInstance = new bootstrap.Modal(elMotivo);
+
+            const elEstado = document.getElementById('modalEstado');
+            if (elEstado) this.bsModalEstadoInstance = new bootstrap.Modal(elEstado);
+
+            this.cargarMotivos();
+        },
+        methods: {
+            async cargarMotivos() {
+                try {
+                    const res = await fetch('/api/MotivoAjuste');
+                    const data = await safeParse(res);
+
+                    if (!res.ok) {
+                        window.showToast('danger', data.message || `HTTP ${res.status}`);
+                        return;
+                    }
+
+                    if (data && data.success) {
+                        this.motivos = data.data;
+                    } else if (Array.isArray(data)) {
+                        this.motivos = data;
+                    }
+                } catch (e) {
+                    console.error(e);
+                    window.showToast('danger', 'Error al cargar motivos');
+                }
+            },
+
+            abrirModalCrear() {
+                this.modal.titulo = 'Nuevo motivo de ajuste';
+                this.modal.motivo = { id: 0, nombre: '', descripcion: '', estado: true };
+                this.modal.error = '';
+                if (this.bsModalInstance) this.bsModalInstance.show();
+            },
+
+            abrirModalEditar(m) {
+                this.modal.titulo = 'Editar motivo de ajuste';
+                this.modal.motivo = { ...m };
+                this.modal.error = '';
+                if (this.bsModalInstance) this.bsModalInstance.show();
+            },
+
+            async guardarMotivo() {
+                this.modal.error = '';
+                const nombre = (this.modal.motivo.nombre || '').trim();
+                const descripcion = (this.modal.motivo.descripcion || '').trim();
+
+                if (!nombre) {
+                    this.modal.error = 'Ingrese el nombre';
+                    return;
+                }
+
+                try {
+                    const esNuevo = this.modal.motivo.id === 0;
+                    const url = esNuevo ? '/api/MotivoAjuste' : `/api/MotivoAjuste/${this.modal.motivo.id}`;
+                    const method = esNuevo ? 'POST' : 'PATCH';
+
+                    const body = esNuevo
+                        ? { nombre, descripcion }
+                        : { nombre, descripcion };
+
+                    const res = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+
+                    const data = await safeParse(res);
+
+                    if (!res.ok) {
+                        let errorMsg = data.message || `Error HTTP ${res.status}`;
+                        if (data.errors && data.errors.Nombre) {
+                            errorMsg = Array.isArray(data.errors.Nombre)
+                                ? data.errors.Nombre.join('\n')
+                                : data.errors.Nombre;
+                        }
+                        this.modal.error = errorMsg;
+                        return;
+                    }
+
+                    if (data && data.success) {
+                        window.showToast('success', data.message || 'Guardado correctamente');
+                        await this.cargarMotivos();
+                        if (this.bsModalInstance) this.bsModalInstance.hide();
+                    } else {
+                        let errorMsg = 'Error en la operación';
+                        if (data.errors?.Nombre) {
+                            errorMsg = Array.isArray(data.errors.Nombre) ? data.errors.Nombre.join('\n') : data.errors.Nombre;
+                        } else if (data.message) {
+                            errorMsg = data.message;
+                        }
+                        this.modal.error = errorMsg;
+                    }
+                } catch (e) {
+                    console.error(e);
+                    this.modal.error = 'Error de conexión o servidor';
+                }
+            },
+
+            abrirModalEstado(m) {
+                if (!m) return;
+                this.modalEstado.id = m.id;
+                this.modalEstado.nombre = m.nombre;
+                this.modalEstado.estado = m.estado;
+                this.modalEstado.accion = m.estado ? 'Desactivar' : 'Activar';
+                this.modalEstado.titulo = m.estado ? 'Desactivar motivo' : 'Activar motivo';
+                this.modalEstado.loading = false;
+
+                if (this.bsModalEstadoInstance) this.bsModalEstadoInstance.show();
+            },
+
+            async confirmarCambioEstado() {
+                if (!this.modalEstado.id || this.modalEstado.loading) return;
+
+                this.modalEstado.loading = true;
+                try {
+                    const res = await fetch(`/api/MotivoAjuste/${this.modalEstado.id}/Estado`, { method: 'PATCH' });
+                    const data = await safeParse(res);
+
+                    if (!res.ok || (data && !data.success)) {
+                        window.showToast('danger', data.message || 'Error al cambiar estado');
+                        return;
+                    }
+
+                    window.showToast('success', data.message || 'Estado actualizado');
+                    await this.cargarMotivos();
+                    if (this.bsModalEstadoInstance) this.bsModalEstadoInstance.hide();
+
+                } catch (e) {
+                    console.error(e);
+                    window.showToast('danger', 'Excepción al cambiar estado');
+                } finally {
+                    this.modalEstado.loading = false;
+                }
+            }
+        }
+    }).mount('#app');
+</script>
 }
-    </tbody>
-</table>
