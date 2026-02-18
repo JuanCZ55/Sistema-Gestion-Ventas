@@ -2,14 +2,89 @@
 @using System.Security.Claims
 @{
   ViewData["Title"] = "Ventas";
+  int total = ViewBag?.Total ?? 0;
+  int pageSize = ViewBag?.PageSize ?? 10;
+  int totalPages = total > 0 ? (int)Math.Ceiling((double)total / pageSize) : 1;
+  int currentPage = ViewBag?.Page ?? 1;
+  int? metodoPagoIdFiltro = ViewBag?.MetodoPagoIdFiltro;
+  DateTime? fechaMin = ViewBag?.FechaMin;
+  DateTime? fechaMax = ViewBag?.FechaMax;
+  bool? estadoFiltro = ViewBag?.EstadoFiltro;
+  int? usuarioCreadorIdFiltro = ViewBag?.UsuarioCreadorIdFiltro;
+  int? usuarioModificadorIdFiltro = ViewBag?.UsuarioModificadorIdFiltro;
+  var isAdmin = User.FindFirst(ClaimTypes.Role)?.Value == "1";
 }
 
+<!-- Formulario de filtros -->
+<form method="get" asp-action="Index" class="mb-3">
+  <div class="row g-2">
+    <div class="col-md-2">
+      <label class="invisible">Crear</label>
+      <a asp-action="Create" class="btn btn-primary w-100">Crear Nueva</a>
+    </div>
+    <div class="col-md-2">
+      <label for="metodoPagoId">Método de Pago</label>
+      <select class="form-select" id="metodoPagoId" name="metodoPagoId">
+        <option value="">Todos</option>
+        @foreach (var item in (IEnumerable<SelectListItem>)ViewData["MetodoPagoId"]!)
+        {
+          <option value="@item.Value" selected="@(item.Value == metodoPagoIdFiltro?.ToString())">@item.Text</option>
+        }
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label for="fechaMin">Fecha desde</label>
+      <input type="date" class="form-control" id="fechaMin" name="fechaMin" 
+             value="@fechaMin?.ToString("yyyy-MM-dd")">
+    </div>
+    <div class="col-md-2">
+      <label for="fechaMax">Fecha hasta</label>
+      <input type="date" class="form-control" id="fechaMax" name="fechaMax" 
+             value="@fechaMax?.ToString("yyyy-MM-dd")">
+    </div>
+    <div class="col-md-2">
+      <label for="estado">Estado</label>
+      <select class="form-select" id="estado" name="estado">
+        <option value="" selected="@(estadoFiltro == null)">Todos</option>
+        <option value="true" selected="@(estadoFiltro == true)">Activa</option>
+        <option value="false" selected="@(estadoFiltro == false)">Anulada</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label>&nbsp;</label>
+      <button type="submit" class="btn btn-success w-100">Filtrar</button>
+    </div>
+  </div>
+  @if (isAdmin)
+  {
+    <div class="row g-2 mt-1">
+      <div class="col-md-2">
+        <!-- Espaciador -->
+      </div>
+      <div class="col-md-3">
+        <label for="usuarioCreadorId">Usuario Creador</label>
+        <select class="form-select text-capitalize" id="usuarioCreadorId" name="usuarioCreadorId">
+          <option value="">Todos</option>
+          @foreach (var item in (IEnumerable<SelectListItem>)ViewData["UsuarioCreadorId"]!)
+          {
+            <option value="@item.Value" selected="@(item.Value == usuarioCreadorIdFiltro?.ToString())">@item.Text</option>
+          }
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="usuarioModificadorId">Usuario Modificador</label>
+        <select class="form-select text-capitalize" id="usuarioModificadorId" name="usuarioModificadorId">
+          <option value="">Todos</option>
+          @foreach (var item in (IEnumerable<SelectListItem>)ViewData["UsuarioModificadorId"]!)
+          {
+            <option value="@item.Value" selected="@(item.Value == usuarioModificadorIdFiltro?.ToString())">@item.Text</option>
+          }
+        </select>
+      </div>
+    </div>
+  }
+</form>
 
-<p>
-  <a asp-action="Create" class="btn btn-primary">
-    Crear Nueva Venta
-  </a>
-</p>
 <table class="table">
   <thead>
     <tr>
@@ -20,9 +95,12 @@
         Detalle
       </th>
       <th>
+        Total
+      </th>
+      <th>
         Método de Pago
       </th>
-      @if (User.FindFirst(ClaimTypes.Role)?.Value == "1")
+      @if (isAdmin)
       {
         <th>
           Usuario Creador
@@ -34,6 +112,9 @@
       <th>
         Estado
       </th>
+      <th>
+        Acciones
+      </th>
     </tr>
   </thead>
   <tbody>
@@ -41,9 +122,9 @@
     {
       <tr>
         <td>
-          @item.Fecha.AddHours(-3).ToString("dd/MM/yyyy HH:mm")
+          @item.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
         </td>
-        <td>
+        <td class="text-capitalize">
           @if (item.Detalles.Any())
           {
             var first = item.Detalles.First();
@@ -57,6 +138,9 @@
             }
           </td>
           <td>
+            $@item.Total.ToString("N2")
+          </td>
+          <td class="text-capitalize">
             @if (item.MetodoPago != null)
             {
               @Html.DisplayFor(modelItem => item!.MetodoPago!.Nombre)
@@ -66,9 +150,9 @@
               <span>N/A</span>
             }
           </td>
-          @if (User.FindFirst(ClaimTypes.Role)?.Value == "1")
+          @if (isAdmin)
           {
-            <td>
+            <td class="text-capitalize">
               @if (item.UsuarioCreador != null)
               {
                 @($"{item.UsuarioCreador.Nombre} {item.UsuarioCreador.Apellido}")
@@ -79,7 +163,7 @@
                 <span>N/A</span>
               }
             </td>
-            <td>
+            <td class="text-capitalize">
               @if (item.UsuarioModificador != null)
               {
                 @($"{item.UsuarioModificador.Nombre} {item.UsuarioModificador.Apellido}")
@@ -152,7 +236,8 @@
                           <br />
                           <ul class="mb-2">
                             <li><b>ID:</b> @item.Id</li>
-                            <li><b>Fecha:</b> @item.Fecha.AddHours(-3).ToString("dd/MM/yyyy HH:mm")</li>
+                            <li><b>Fecha:</b> @item.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</li>
+                            <li><b>Total:</b> $@item.Total.ToString("N2")</li>
                             <li><b>Método de Pago:</b> @(item.MetodoPago?.Nombre ?? "N/A")</li>
                             <li><b>Detalle:</b>     <ul>
     @foreach (var det in item.Detalles)
@@ -185,6 +270,96 @@
         }
       </tbody>
     </table>
+
+<!-- Paginado -->
+@if (totalPages > 1)
+{
+  <nav>
+    <ul class="pagination justify-content-center">
+      @if (currentPage > 1)
+      {
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)"
+             asp-route-metodoPagoId="@metodoPagoIdFiltro"
+             asp-route-fechaMin="@fechaMin?.ToString("yyyy-MM-dd")"
+             asp-route-fechaMax="@fechaMax?.ToString("yyyy-MM-dd")"
+             asp-route-estado="@estadoFiltro"
+             asp-route-usuarioCreadorId="@usuarioCreadorIdFiltro"
+             asp-route-usuarioModificadorId="@usuarioModificadorIdFiltro">Anterior</a>
+        </li>
+      }
+
+      @{
+        int startPage = Math.Max(1, currentPage - 2);
+        int endPage = Math.Min(totalPages, currentPage + 2);
+      }
+
+      @if (startPage > 1)
+      {
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="1"
+             asp-route-metodoPagoId="@metodoPagoIdFiltro"
+             asp-route-fechaMin="@fechaMin?.ToString("yyyy-MM-dd")"
+             asp-route-fechaMax="@fechaMax?.ToString("yyyy-MM-dd")"
+             asp-route-estado="@estadoFiltro"
+             asp-route-usuarioCreadorId="@usuarioCreadorIdFiltro"
+             asp-route-usuarioModificadorId="@usuarioModificadorIdFiltro">1</a>
+        </li>
+        @if (startPage > 2)
+        {
+          <li class="page-item disabled">
+            <span class="page-link">...</span>
+          </li>
+        }
+      }
+
+      @for (int i = startPage; i <= endPage; i++)
+      {
+        <li class="page-item @(i == currentPage ? "active" : "")">
+          <a class="page-link" asp-action="Index" asp-route-page="@i"
+             asp-route-metodoPagoId="@metodoPagoIdFiltro"
+             asp-route-fechaMin="@fechaMin?.ToString("yyyy-MM-dd")"
+             asp-route-fechaMax="@fechaMax?.ToString("yyyy-MM-dd")"
+             asp-route-estado="@estadoFiltro"
+             asp-route-usuarioCreadorId="@usuarioCreadorIdFiltro"
+             asp-route-usuarioModificadorId="@usuarioModificadorIdFiltro">@i</a>
+        </li>
+      }
+
+      @if (endPage < totalPages)
+      {
+        @if (endPage < totalPages - 1)
+        {
+          <li class="page-item disabled">
+            <span class="page-link">...</span>
+          </li>
+        }
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="@totalPages"
+             asp-route-metodoPagoId="@metodoPagoIdFiltro"
+             asp-route-fechaMin="@fechaMin?.ToString("yyyy-MM-dd")"
+             asp-route-fechaMax="@fechaMax?.ToString("yyyy-MM-dd")"
+             asp-route-estado="@estadoFiltro"
+             asp-route-usuarioCreadorId="@usuarioCreadorIdFiltro"
+             asp-route-usuarioModificadorId="@usuarioModificadorIdFiltro">@totalPages</a>
+        </li>
+      }
+
+      @if (currentPage < totalPages)
+      {
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)"
+             asp-route-metodoPagoId="@metodoPagoIdFiltro"
+             asp-route-fechaMin="@fechaMin?.ToString("yyyy-MM-dd")"
+             asp-route-fechaMax="@fechaMax?.ToString("yyyy-MM-dd")"
+             asp-route-estado="@estadoFiltro"
+             asp-route-usuarioCreadorId="@usuarioCreadorIdFiltro"
+             asp-route-usuarioModificadorId="@usuarioModificadorIdFiltro">Siguiente</a>
+        </li>
+      }
+    </ul>
+  </nav>
+}
 
     <script>
       document.addEventListener('DOMContentLoaded', function () {
