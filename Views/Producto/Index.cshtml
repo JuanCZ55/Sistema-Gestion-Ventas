@@ -2,12 +2,63 @@
 
 @{
   ViewData["Title"] = "Productos";
+  int total = ViewBag?.Total ?? 0;
+  int pageSize = ViewBag?.PageSize ?? 10;
+  int totalPages = total > 0 ? (int)Math.Ceiling((double)total / pageSize) : 1;
+  int currentPage = ViewBag?.Page ?? 1;
+  string? nombre = ViewBag?.Nombre;
+  decimal? precioMin = ViewBag?.PrecioMin;
+  decimal? precioMax = ViewBag?.PrecioMax;
+  int? categoriaIdFiltro = ViewBag?.CategoriaIdFiltro;
+  bool? tieneStock = ViewBag?.TieneStock;
 }
 
 
-<p>
-  <button type="button" class="btn btn-primary" onclick="openCreateModal()">Crear Nuevo</button>
-</p>
+<!-- Formulario de filtros -->
+<form method="get" asp-action="Index" class="mb-3">
+  <div class="row g-2">
+    <div class="col-md-2">
+      <label class="invisible">Crear</label>
+      <button type="button" class="btn btn-primary w-100" onclick="openCreateModal()">Crear Nuevo</button>
+    </div>
+    <div class="col-md-2">
+      <label for="nombre">Nombre</label>
+      <input type="text" class="form-control" id="nombre" name="nombre" value="@nombre"    placeholder="Buscar...">
+    </div>
+    <div class="col-md-1">
+      <label for="precioMin">Precio mín</label>
+      <input type="number" class="form-control" id="precioMin" name="precioMin" value="@precioMin"   step="0.01" min="0"
+             placeholder="0.00">
+    </div>
+    <div class="col-md-1">
+      <label for="precioMax">Precio máx</label>
+      <input type="number" class="form-control" id="precioMax" name="precioMax" value="@precioMax"           step="0.01" min="0"
+             placeholder="0.00">
+    </div>
+    <div class="col-md-2">
+      <label for="categoriaId">Categoría</label>
+      <select class="form-select" id="categoriaId" name="categoriaId">
+        <option value="">Todas</option>
+        @foreach (var item in (IEnumerable<SelectListItem>)ViewData["CategoriaId"]!)
+        {
+          <option value="@item.Value" selected="@(item.Value == categoriaIdFiltro?.ToString())">@item.Text</option>
+        }
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label for="tieneStock">Stock</label>
+      <select class="form-select" id="tieneStock" name="tieneStock">
+        <option value="" selected="@(tieneStock == null)">Todos</option>
+        <option value="true" selected="@(tieneStock == true)">Con stock</option>
+        <option value="false" selected="@(tieneStock == false)">Sin stock</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label>&nbsp;</label>
+      <button type="submit" class="btn btn-success w-100">Filtrar</button>
+    </div>
+  </div>
+</form>
 
 <table class="table">
   <thead>
@@ -96,91 +147,161 @@
   </tbody>
 </table>
 
+<!-- Paginado -->
+@if (totalPages > 1)
+{
+  <nav>
+    <ul class="pagination justify-content-center">
+      @if (currentPage > 1)
+      {
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="@(currentPage - 1)"   asp-route-nombre="@nombre"
+             asp-route-precioMin="@precioMin" asp-route-precioMax="@precioMax"          asp-route-categoriaId="@categoriaIdFiltro"
+             asp-route-tieneStock="@tieneStock">Anterior</a>
+        </li>
+      }
+
+      @{
+        int startPage = Math.Max(1, currentPage - 2);
+        int endPage = Math.Min(totalPages, currentPage + 2);
+      }
+
+      @if (startPage > 1)
+      {
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="1"   asp-route-nombre="@nombre"
+             asp-route-precioMin="@precioMin" asp-route-precioMax="@precioMax"           asp-route-categoriaId="@categoriaIdFiltro"
+             asp-route-tieneStock="@tieneStock">1</a>
+        </li>
+        @if (startPage > 2)
+        {
+          <li class="page-item disabled">
+            <span class="page-link">...</span>
+          </li>
+        }
+      }
+
+      @for (int i = startPage; i <= endPage; i++)
+      {
+        <li class="page-item @(i == currentPage ? "active" : "")">
+          <a class="page-link" asp-action="Index" asp-route-page="@i"        asp-route-nombre="@nombre"
+             asp-route-precioMin="@precioMin" asp-route-precioMax="@precioMax"             asp-route-categoriaId="@categoriaIdFiltro"
+             asp-route-tieneStock="@tieneStock">@i</a>
+        </li>
+      }
+
+      @if (endPage < totalPages)
+      {
+        @if (endPage < totalPages - 1)
+        {
+          <li class="page-item disabled">
+            <span class="page-link">...</span>
+          </li>
+        }
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="@totalPages"           asp-route-nombre="@nombre"
+             asp-route-precioMin="@precioMin" asp-route-precioMax="@precioMax"    asp-route-categoriaId="@categoriaIdFiltro"
+             asp-route-tieneStock="@tieneStock">@totalPages</a>
+        </li>
+      }
+
+      @if (currentPage < totalPages)
+      {
+        <li class="page-item">
+          <a class="page-link" asp-action="Index" asp-route-page="@(currentPage + 1)" asp-route-nombre="@nombre"
+             asp-route-precioMin="@precioMin" asp-route-precioMax="@precioMax" asp-route-categoriaId="@categoriaIdFiltro"
+             asp-route-tieneStock="@tieneStock">Siguiente</a>
+        </li>
+      }
+    </ul>
+  </nav>
+}
+
 <partial name="_CreateModal" />
 <partial name="_EditModal" />
 <partial name="_DeleteModal" />
 
 @section Scripts {
   <script>
-                  $(document).ready(function () {
-                    // Los selects ya se cargan del lado servidor
+                      $(document).ready(function () {
+                        // Los selects ya se cargan del lado servidor
 
-                    // Inicializar uploaders UNA SOLA VEZ
-                    initImageUploader('create');
-                    initImageUploader('edit');
+                        // Inicializar uploaders UNA SOLA VEZ
+                        initImageUploader('create');
+                        initImageUploader('edit');
 
-                    // Abrir modal para create
-                    window.openCreateModal = function () {
-                      $('#createForm')[0].reset();
-                      $('#create_Estado').prop('checked', true);
-                      if (window.clearPreview_create) window.clearPreview_create();
-                      const modal = new bootstrap.Modal(document.getElementById('createModal'));
-                      modal.show();
-                    };
+                        // Abrir modal para create
+                        window.openCreateModal = function () {
+                          $('#createForm')[0].reset();
+                          $('#create_Estado').prop('checked', true);
+                          if (window.clearPreview_create) window.clearPreview_create();
+                          const modal = new bootstrap.Modal(document.getElementById('createModal'));
+                          modal.show();
+                        };
 
-                    // Abrir modal para edit
-                    window.openEditModal = function (id) {
-                      if (window.clearPreview_edit) window.clearPreview_edit();
-                      loadData(id);
-                      const modal = new bootstrap.Modal(document.getElementById('editModal'));
-                      modal.show();
-                    };
+                        // Abrir modal para edit
+                        window.openEditModal = function (id) {
+                          if (window.clearPreview_edit) window.clearPreview_edit();
+                          loadData(id);
+                          const modal = new bootstrap.Modal(document.getElementById('editModal'));
+                          modal.show();
+                        };
 
-                    function loadData(id) {
-                      $.get('/Producto/Details/' + id, function (data) {
-                        $('#edit_Id').val(data.id);
-                        $('#edit_Codigo').val(data.codigo);
-                        $('#edit_Nombre').val(data.nombre);
-                        $('#edit_PrecioCosto').val(data.precioCosto);
-                        $('#edit_PrecioVenta').val(data.precioVenta);
-                        $('#edit_Stock').val(data.stock);
-                        $('#edit_Pesable').prop('checked', data.pesable);
-                        $('#edit_Estado').prop('checked', data.estado);
-                        $('#edit_CategoriaId').val(data.categoriaId);
-                        $('#edit_ProveedorId').val(data.proveedorId);
-                        // Usar la API del uploader para setear imagen existente
-                        if (typeof setEditImage === 'function') {
-                          setEditImage(data.imagen);
-                        }
-                      });
-                    }
-
-                    // Delete modal
-                    $('.delete-btn').on('click', function () {
-                      var id = $(this).data('id');
-                      var estado = $(this).data('estado');
-                      $.get('/Producto/Details/' + id, function (data) {
-                        // Poblar imagen
-                        if (data.imagen) {
-                          $('#deleteImageContainer').html('<img src="' + data.imagen + '" class="img-fluid rounded" style="max-width: 150px; max-height: 150px;" alt="Imagen del producto" />');
-                        } else {
-                          $('#deleteImageContainer').html('<div class="text-muted">Sin imagen</div>');
+                        function loadData(id) {
+                          $.get('/Producto/Details/' + id, function (data) {
+                            $('#edit_Id').val(data.id);
+                            $('#edit_Codigo').val(data.codigo);
+                            $('#edit_Nombre').val(data.nombre);
+                            $('#edit_PrecioCosto').val(data.precioCosto);
+                            $('#edit_PrecioVenta').val(data.precioVenta);
+                            $('#edit_Stock').val(data.stock);
+                            $('#edit_Pesable').prop('checked', data.pesable);
+                            $('#edit_Estado').prop('checked', data.estado);
+                            $('#edit_CategoriaId').val(data.categoriaId);
+                            $('#edit_ProveedorId').val(data.proveedorId);
+                            // Usar la API del uploader para setear imagen existente
+                            if (typeof setEditImage === 'function') {
+                              setEditImage(data.imagen);
+                            }
+                          });
                         }
 
-                        // Poblar campos de información
-                        $('#delete_Codigo').text(data.codigo);
-                        $('#delete_Nombre').text(data.nombre);
-                        $('#delete_PrecioCosto').text('$' + parseFloat(data.precioCosto).toFixed(2));
-                        $('#delete_PrecioVenta').text('$' + parseFloat(data.precioVenta).toFixed(2));
-                        $('#delete_Stock').text(parseFloat(data.stock).toFixed(3));
-                        $('#delete_Pesable').text(data.pesable ? 'Sí' : 'No');
-                        $('#delete_EstadoActual').text(data.estado ? 'Activo' : 'Inactivo');
-                        $('#delete_Categoria').text(data.categoriaNombre || 'N/A');
-                        $('#delete_Proveedor').text(data.proveedorNombre || 'N/A');
-                        $('#deleteButton').addClass(data.estado ? 'btn-danger' : 'btn-success');
+                        // Delete modal
+                        $('.delete-btn').on('click', function () {
+                          var id = $(this).data('id');
+                          var estado = $(this).data('estado');
+                          $.get('/Producto/Details/' + id, function (data) {
+                            // Poblar imagen
+                            if (data.imagen) {
+                              $('#deleteImageContainer').html('<img src="' + data.imagen + '" class="img-fluid rounded" style="max-width: 150px; max-height: 150px;" alt="Imagen del producto" />');
+                            } else {
+                              $('#deleteImageContainer').html('<div class="text-muted">Sin imagen</div>');
+                            }
 
-                        $('#deleteText').addClass(data.estado ? 'text-danger' : 'text-success');
+                            // Poblar campos de información
+                            $('#delete_Codigo').text(data.codigo);
+                            $('#delete_Nombre').text(data.nombre);
+                            $('#delete_PrecioCosto').text('$' + parseFloat(data.precioCosto).toFixed(2));
+                            $('#delete_PrecioVenta').text('$' + parseFloat(data.precioVenta).toFixed(2));
+                            $('#delete_Stock').text(parseFloat(data.stock).toFixed(3));
+                            $('#delete_Pesable').text(data.pesable ? 'Sí' : 'No');
+                            $('#delete_EstadoActual').text(data.estado ? 'Activo' : 'Inactivo');
+                            $('#delete_Categoria').text(data.categoriaNombre || 'N/A');
+                            $('#delete_Proveedor').text(data.proveedorNombre || 'N/A');
+                            $('#deleteButton').addClass(data.estado ? 'btn-danger' : 'btn-success');
 
-                        $('#estadoText').text(data.estado ? 'Inactivo' : 'Activo');
-                        $('#deleteButton').addClass(data.estado ? 'btn-danger' : 'btn-success');
-                        $('#deleteButton').text(data.estado ? 'Desactivar' : 'Activar');
+                            $('#deleteText').addClass(data.estado ? 'text-danger' : 'text-success');
 
-                        $('#delete_Id').val(id);
-                        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-                        modal.show();
+                            $('#estadoText').text(data.estado ? 'Inactivo' : 'Activo');
+                            $('#deleteButton').addClass(data.estado ? 'btn-danger' : 'btn-success');
+                            $('#deleteButton').text(data.estado ? 'Desactivar' : 'Activar');
+
+                            $('#delete_Id').val(id);
+                            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                            modal.show();
+                          });
+                        });
+
                       });
-                    });
-
-                  });
   </script>
 }
