@@ -24,7 +24,15 @@ namespace SistemaGestionVentas.Controllers
         }
 
         // GET: Ventas
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            int? metodoPagoId,
+            DateTime? fechaMin,
+            DateTime? fechaMax,
+            bool? estado,
+            int? usuarioCreadorId,
+            int? usuarioModificadorId,
+            int page = 1
+        )
         {
             var currentUserId = _userService.GetCurrentUserId();
             var roleClaim = int.TryParse(User.FindFirst(ClaimTypes.Role)?.Value, out int role)
@@ -40,14 +48,108 @@ namespace SistemaGestionVentas.Controllers
                 .Include(v => v.Detalles)
                 .ThenInclude(d => d.Producto);
 
+            // Si es vendedor (rol 2), solo ver sus propias ventas
             if (roleClaim == 2)
             {
                 query = query.Where(v => v.UsuarioCreadorId == currentUserId);
             }
 
+            // Convertir fechas de filtros (local -> UTC)
+            DateTime? fechaMinUtc = null;
+            DateTime? fechaMaxUtc = null;
+
+            if (fechaMin.HasValue)
+            {
+                fechaMinUtc = DateTime
+                    .SpecifyKind(fechaMin.Value, DateTimeKind.Local)
+                    .ToUniversalTime();
+            }
+
+            if (fechaMax.HasValue)
+            {
+                fechaMaxUtc = DateTime
+                    .SpecifyKind(fechaMax.Value, DateTimeKind.Local)
+                    .ToUniversalTime();
+            }
+
+            // Aplicar filtros
+            if (metodoPagoId.HasValue)
+            {
+                query = query.Where(v => v.MetodoPagoId == metodoPagoId.Value);
+            }
+
+            if (fechaMinUtc.HasValue)
+            {
+                query = query.Where(v => v.Fecha >= fechaMinUtc.Value);
+            }
+
+            if (fechaMaxUtc.HasValue)
+            {
+                // Agregar un día completo para incluir todo el día seleccionado
+                var fechaMaxFinal = fechaMaxUtc.Value.AddDays(1);
+                query = query.Where(v => v.Fecha < fechaMaxFinal);
+            }
+
+            if (estado.HasValue)
+            {
+                query = query.Where(v => v.Estado == estado.Value);
+            }
+
+            // Filtros de usuario solo para admin (rol 1)
+            if (roleClaim == 1)
+            {
+                if (usuarioCreadorId.HasValue)
+                {
+                    query = query.Where(v => v.UsuarioCreadorId == usuarioCreadorId.Value);
+                }
+
+                if (usuarioModificadorId.HasValue)
+                {
+                    query = query.Where(v => v.UsuarioModificadorId == usuarioModificadorId.Value);
+                }
+            }
+
+            // Contar total antes de paginar
+            var total = await query.CountAsync();
+
+            // Configurar paginación
+            int pageSize = 10;
+            if (page < 1)
+                page = 1;
+
+            // Aplicar paginación
+            query = query
+                .OrderByDescending(v => v.Fecha)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize);
+
+            // Pasar datos a la vista
             ViewData["MetodoPagoId"] = new SelectList(_context.MetodoPago, "Id", "Nombre");
 
-            return View(await query.OrderByDescending(v => v.Fecha).ToListAsync());
+            // Para filtros de usuario (solo admin)
+            if (roleClaim == 1)
+            {
+                var usuarios = await _context
+                    .Usuario.OrderBy(u => u.Nombre)
+                    .Select(u => new { u.Id, NombreCompleto = u.Nombre + " " + u.Apellido })
+                    .ToListAsync();
+
+                ViewData["UsuarioCreadorId"] = new SelectList(usuarios, "Id", "NombreCompleto");
+                ViewData["UsuarioModificadorId"] = new SelectList(usuarios, "Id", "NombreCompleto");
+            }
+
+            // Datos de paginación y filtros
+            ViewBag.Page = page;
+            ViewBag.Total = total;
+            ViewBag.PageSize = pageSize;
+            ViewBag.MetodoPagoIdFiltro = metodoPagoId;
+            ViewBag.FechaMin = fechaMin;
+            ViewBag.FechaMax = fechaMax;
+            ViewBag.EstadoFiltro = estado;
+            ViewBag.UsuarioCreadorIdFiltro = usuarioCreadorId;
+            ViewBag.UsuarioModificadorIdFiltro = usuarioModificadorId;
+
+            return View(await query.ToListAsync());
         }
 
         // GET: Ventas/Details/5

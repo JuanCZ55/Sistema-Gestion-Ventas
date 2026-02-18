@@ -29,7 +29,14 @@ namespace SistemaGestionVentas.Controllers
 
         // GET: Producto
         [HttpGet("/Producto")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? nombre,
+            decimal? precioMin,
+            decimal? precioMax,
+            int? categoriaId,
+            bool? tieneStock,
+            int page = 1
+        )
         {
             try
             {
@@ -43,13 +50,59 @@ namespace SistemaGestionVentas.Controllers
                     "Id",
                     "NombreContacto"
                 );
-                var context = _context
+
+                var query = _context
                     .Producto.Include(p => p.Categoria)
                     .Include(p => p.Proveedor)
                     .Include(p => p.UsuarioCreador)
-                    .Include(p => p.UsuarioModificador);
+                    .Include(p => p.UsuarioModificador)
+                    .AsQueryable();
 
-                return View(await context.ToListAsync());
+                if (!string.IsNullOrWhiteSpace(nombre))
+                {
+                    var nombreLower = nombre.ToLower();
+                    query = query.Where(p => p.Nombre.Contains(nombreLower));
+                }
+
+                if (precioMin.HasValue)
+                {
+                    query = query.Where(p => p.PrecioVenta >= precioMin.Value);
+                }
+
+                if (precioMax.HasValue)
+                {
+                    query = query.Where(p => p.PrecioVenta <= precioMax.Value);
+                }
+
+                if (categoriaId.HasValue)
+                {
+                    query = query.Where(p => p.CategoriaId == categoriaId.Value);
+                }
+
+                if (tieneStock.HasValue)
+                {
+                    query = query.Where(p => tieneStock.Value ? p.Stock > 0 : p.Stock <= 0);
+                }
+
+                var total = await query.CountAsync();
+
+                int pageSize = 10;
+                if (page < 1)
+                    page = 1;
+
+                query = query.OrderBy(p => p.Id).Skip((page - 1) * pageSize).Take(pageSize);
+
+                // Pasar datos de paginación y filtros a la vista
+                ViewBag.Page = page;
+                ViewBag.Total = total;
+                ViewBag.PageSize = pageSize;
+                ViewBag.Nombre = nombre;
+                ViewBag.PrecioMin = precioMin;
+                ViewBag.PrecioMax = precioMax;
+                ViewBag.CategoriaIdFiltro = categoriaId;
+                ViewBag.TieneStock = tieneStock;
+
+                return View(await query.ToListAsync());
             }
             catch (Exception e)
             {
