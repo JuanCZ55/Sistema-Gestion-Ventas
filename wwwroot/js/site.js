@@ -30,13 +30,7 @@ document.addEventListener("DOMContentLoaded", function () {
     render: {
       option: function (item, escape) {
         return `
-          <div class="ts-option-custom">
-            <div class="ts-codigo">${escape(item.codigo)}</div>
-            <div class="ts-main">
-              <span class="ts-precio">$${escape(item.precioVenta)}</span>
-              <span class="ts-nombre">${escape(item.nombre)}</span>
-            </div>
-          </div>
+          <div class="text-capitalize">[${escape(item.codigo)}] ${escape(item.nombre)} — $${escape(item.precioVenta)}</div>
         `;
       },
       item: function (item, escape) {

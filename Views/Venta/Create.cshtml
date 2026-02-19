@@ -1,13 +1,10 @@
 ﻿@model SistemaGestionVentas.Models.Venta
 
 @{
-  ViewData["Title"] = ViewData["Action"]?.ToString() ?? "Create";
+  ViewData["Title"] = "Crear Venta";
 }
 
-<h1>@(ViewData["Action"]?.ToString() ?? "Create")</h1>
 
-<h4>Venta</h4>
-<hr />
 <div class="row">
   <div class="col-md-12">
     <form asp-action="@(ViewData["Action"]?.ToString() ?? "Create")">
@@ -29,7 +26,7 @@
         </div>
         <div class="form-group col">
           <label asp-for="MetodoPagoId" class="control-label"> Métodos de Pago</label>
-          <select asp-for="MetodoPagoId" class="form-control" asp-items="ViewBag.MetodoPagoId"></select>
+          <select asp-for="MetodoPagoId" class="form-control text-capitalize" asp-items="ViewBag.MetodoPagoId"></select>
         </div>
       </div>
 
@@ -59,9 +56,9 @@
 
       <div class="d-flex justify-content-between mt-3">
         <a asp-action="Index" class="btn btn-secondary">
-          Back to List
+          Volver al Listado
         </a>
-        <input type="submit" value="@(ViewData["Action"]?.ToString() ?? "Create")" class="btn btn-primary" />
+        <input type="submit" value="Crear" class="btn btn-primary" />
 
       </div>
 

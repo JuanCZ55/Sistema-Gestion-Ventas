@@ -22,9 +22,9 @@ namespace SistemaGestionVentas.Services
             // Claims (Datos del usuario en el token)
             var claims = new List<Claim>
             {
+                new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
                 new Claim(ClaimTypes.Name, usuario.Email),
-                new Claim(ClaimTypes.Role, usuario.Rol.ToString()), // Usar Rol como string "1" o "2"
-                new Claim("IdUsuario", usuario.Id.ToString()),
+                new Claim(ClaimTypes.Role, usuario.Rol.ToString()),
             };
 
             // Credenciales de firma
