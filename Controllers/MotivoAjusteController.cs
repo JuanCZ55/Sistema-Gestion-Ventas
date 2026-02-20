@@ -15,9 +15,16 @@ namespace SistemaGestionVentas.Controllers
         }
 
         // GET: MotivoAjustes
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            return View(await _context.MotivoAjuste.ToListAsync());
+            try
+            {
+                return View();
+            }
+            catch (Exception)
+            {
+                return RedirectToAction("Index", "Home");
+            }
         }
 
         // GET: MotivoAjustes/Details/5
@@ -44,8 +51,7 @@ namespace SistemaGestionVentas.Controllers
         }
 
         // POST: MotivoAjustes/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
@@ -78,8 +84,7 @@ namespace SistemaGestionVentas.Controllers
         }
 
         // POST: MotivoAjustes/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(

@@ -54,10 +54,11 @@ namespace SistemaGestionVentas.Controllers
 
                 return View(data);
             }
-            catch (System.Exception)
+            catch (Exception ex)
             {
-                Notify("Error al cargar las categorias", "danger");
-                return View(Enumerable.Empty<Categoria>());
+                Notify($"Error al cargar las categorias: {ex.Message}", "danger");
+
+                return RedirectToAction("Index", "Home");
             }
         }
 

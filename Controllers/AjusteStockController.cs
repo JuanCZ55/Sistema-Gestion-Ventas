@@ -89,7 +89,6 @@ namespace SistemaGestionVentas.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al cargar los ajustes de stock: {ex}");
                 Notify($"Error al cargar los ajustes de stock: {ex.Message}", "danger");
 
                 return RedirectToAction("Index", "Home");

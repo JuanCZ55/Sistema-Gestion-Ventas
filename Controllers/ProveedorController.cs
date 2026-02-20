@@ -25,38 +25,46 @@ namespace SistemaGestionVentas.Controllers
         // GET: Proveedor
         public async Task<IActionResult> Index(string search, bool? estado, int page = 1)
         {
-            const int pageSize = 10;
-            IQueryable<Proveedor> query = _context.Proveedor;
-
-            if (!string.IsNullOrWhiteSpace(search))
+            try
             {
-                search = search.Trim().ToLower();
-                query = query.Where(p =>
-                    p.NombreContacto.Contains(search)
-                    || (p.NombreEmpresa != null && p.NombreEmpresa.Contains(search))
-                    || p.Telefono.Contains(search)
-                );
-            }
+                const int pageSize = 10;
+                IQueryable<Proveedor> query = _context.Proveedor;
 
-            if (estado.HasValue)
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    search = search.Trim().ToLower();
+                    query = query.Where(p =>
+                        p.NombreContacto.Contains(search)
+                        || (p.NombreEmpresa != null && p.NombreEmpresa.Contains(search))
+                        || p.Telefono.Contains(search)
+                    );
+                }
+
+                if (estado.HasValue)
+                {
+                    query = query.Where(p => p.Estado == estado.Value);
+                }
+
+                query = query.OrderBy(p => p.Id);
+
+                int total = await query.CountAsync();
+
+                var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+                ViewBag.Total = total;
+                ViewBag.Page = page;
+                ViewBag.PageSize = pageSize;
+                ViewBag.Search = search;
+                ViewBag.Estado = estado;
+
+                // Modelo principal
+                return View(data);
+            }
+            catch (Exception)
             {
-                query = query.Where(p => p.Estado == estado.Value);
+                Notify("Error al cargar los proveedores.", "danger");
+                return RedirectToAction("Index", "Home");
             }
-
-            query = query.OrderBy(p => p.Id);
-
-            int total = await query.CountAsync();
-
-            var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-
-            ViewBag.Total = total;
-            ViewBag.Page = page;
-            ViewBag.PageSize = pageSize;
-            ViewBag.Search = search;
-            ViewBag.Estado = estado;
-
-            // Modelo principal
-            return View(data);
         }
 
         // GET: Proveedor/Details/5

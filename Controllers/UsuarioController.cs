@@ -64,23 +64,7 @@ namespace SistemaGestionVentas.Controllers
             catch (Exception e)
             {
                 Notify("Error al cargar los usuarios: " + e.Message, "danger");
-                // En caso de error, devolver lista sin filtros aplicados
-                int pageSize = 10;
-                var querySinFiltros = _context.Usuario;
-                var totalItems = await querySinFiltros.CountAsync();
-                var items = await querySinFiltros
-                    .OrderBy(u => u.Id)
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                ViewBag.Items = items;
-                ViewBag.TotalItems = totalItems;
-                ViewBag.PageNumber = pageNumber;
-                ViewBag.PageSize = pageSize;
-                ViewBag.Search = (string?)null;
-
-                return View();
+                return RedirectToAction("Index", "Home");
             }
         }
 
