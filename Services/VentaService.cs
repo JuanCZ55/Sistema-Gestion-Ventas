@@ -56,7 +56,12 @@ namespace SistemaGestionVentas.Services
                     // Consultar precio y stock selectivamente
                     var productoInfo = await _context
                         .Producto.Where(p => p.Id == item.IdProducto && p.Estado == true)
-                        .Select(p => new { p.PrecioVenta, p.Stock })
+                        .Select(p => new
+                        {
+                            p.PrecioVenta,
+                            p.PrecioCosto,
+                            p.Stock,
+                        })
                         .FirstOrDefaultAsync();
 
                     if (productoInfo == null)
@@ -114,6 +119,7 @@ namespace SistemaGestionVentas.Services
                             ProductoId = item.IdProducto,
                             Cantidad = item.Cantidad,
                             PrecioUnitario = productoInfo.PrecioVenta,
+                            PrecioCosto = productoInfo.PrecioCosto,
                         }
                     );
 

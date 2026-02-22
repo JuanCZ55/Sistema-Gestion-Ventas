@@ -15,6 +15,9 @@ namespace SistemaGestionVentas.Models
         [Column(TypeName = "decimal(10,2)")]
         public decimal PrecioUnitario { get; set; }
 
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal PrecioCosto { get; set; }
+
         // --- Relaciones ---
 
         [Required(ErrorMessage = "La venta es obligatoria")]
