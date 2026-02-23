@@ -232,7 +232,7 @@ namespace SistemaGestionVentas.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
             [Bind(
-                "Id,Codigo,Nombre,PrecioCosto,PrecioVenta,Stock,Pesable,Fimagen,CategoriaId,ProveedorId"
+                "Id,Codigo,Nombre,PrecioCosto,PrecioVenta,Pesable,Fimagen,CategoriaId,ProveedorId"
             )]
                 Producto producto,
             bool BorrarImagen = false
