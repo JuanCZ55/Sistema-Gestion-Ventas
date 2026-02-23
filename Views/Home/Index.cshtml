@@ -1,8 +1,258 @@
-﻿@{
-  ViewData["Title"] = "Home Page";
+﻿@model SistemaGestionVentas.Models.DashboardViewModel
+@using System.Globalization
+
+@{
+  ViewData["Title"] = "Dashboard";
+  var culture = new CultureInfo("es-AR");
+  var badgeClasses = new[] { "bg-warning", "bg-info", "bg-success", "bg-primary", "bg-danger" };
 }
 
-<div class="text-center">
-  <h1 class="display-4">Welcome</h1>
-  <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container text-capitalize">
+
+  <div class="row g-4 align-items-center">
+    <form method="get" class="row g-3 justify-content-center">
+      <div class="col-md-3">
+        <label for="fechaInicio" class="">Fecha Inicio:</label>
+        <input type="date" name="fechaInicio" id="fechaInicio" class="form-control" value="@ViewBag.FechaInicio">
+      </div>
+      <div class="col-md-3">
+        <label for="fechaFin" class="">Fecha Fin:</label>
+        <input type="date" name="fechaFin" id="fechaFin" class="form-control" value="@ViewBag.FechaFin">
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-success w-100 mt-4">Filtrar</button>
+      </div>
+    </form>
+
+    <div class="col-md-6">
+      <div id="chartMoney"></div>
+
+      <div class="card mt-3 shadow-sm">
+        <div class="card-header text-center bg-success text-white">
+          <h5 class="mb-0">Totales Dinero</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col">
+              <h6>Costo</h6>
+              <h4>@Model.TotalCosto.ToString("C", culture)</h4>
+            </div>
+            <div class="col">
+              <h6>Ganancia</h6>
+              <h4 class="text-success">@Model.TotalGanancia.ToString("C", culture)</h4>
+            </div>
+            <div class="col">
+              <h6>Venta</h6>
+              <h4>@Model.TotalVenta.ToString("C", culture)</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div id="chartQty"></div>
+
+      <div class="card mt-3 shadow-sm">
+        <div class="card-header text-center bg-primary text-white">
+          <h5 class="mb-0">Totales Cantidades</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col">
+              <h6>Ventas</h6>
+              <h4>@Model.TotalCantVenta</h4>
+            </div>
+            <div class="col">
+              <h6>Productos</h6>
+              <h4>@Model.TotalCantProd</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">Top Vendedores</h5>
+        </div>
+        <div class="card-body">
+          @if (Model.UsuariosTop.Count == 0)
+          {
+            <div class="text-muted">Sin datos</div>
+          }
+          else
+          {
+            for (var i = 0; i < Model.UsuariosTop.Count; i++)
+            {
+              var badgeClass = badgeClasses[i % badgeClasses.Length];
+              <div class="mb-2"><span class="badge @badgeClass">@(i + 1)</span> @Model.UsuariosTop[i]</div>
+            }
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">Productos Poco Stock</h5>
+        </div>
+        <div class="card-body">
+          @if (Model.ProductoPocoStock.Count == 0)
+          {
+            <div class="text-muted">Sin datos</div>
+          }
+          else
+          {
+            var index = 0;
+            foreach (var item in Model.ProductoPocoStock)
+            {
+              var badgeClass = badgeClasses[index % badgeClasses.Length];
+              <div class="mb-2">
+                <span class="badge @badgeClass">@(index + 1)</span> @item.Key - <strong>@item.Value </strong>
+              </div>
+              index++;
+            }
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">Top Productos</h5>
+        </div>
+        <div class="card-body">
+          @if (Model.ProductoTop.Count == 0)
+          {
+            <div class="text-muted">Sin datos</div>
+          }
+          else
+          {
+            for (var i = 0; i < Model.ProductoTop.Count; i++)
+            {
+              var badgeClass = badgeClasses[i % badgeClasses.Length];
+              <div class="mb-2"><span class="badge @badgeClass">@(i + 1)</span> @Model.ProductoTop[i]</div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+@section Scripts {
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script>
+    const graficos = @Html.Raw(ViewBag.GraficosJson ?? "[]");
+    const chartMoneyColors = ['#1F7723', '#E45756'];
+    const chartQtyColors = ['#2CA02C', '#FF9F1C'];
+
+    const baseChartConfig = {
+    height: 350,
+    defaultLocale: 'es',
+    locales: [
+    {
+    name: 'es',
+    options: {
+    months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+    shortMonths: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+    weekdays: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+    shortWeekdays: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+    toolbar: {
+    selection: "Selección",
+    selectionZoom: "Zoom de selección",
+    zoomIn: "Acercar",
+    zoomOut: "Alejar",
+    pan: "Desplazar",
+    reset: "Reiniciar"
+    }
+    }
+    }
+    ],
+    toolbar: {
+    tools: { download: false }
+    }
+    };
+
+    const formatMoney = (value) => new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS'
+    }).format(value);
+
+    const chartMoney = new ApexCharts(
+    document.querySelector("#chartMoney"),
+    {
+    chart: {
+    ...baseChartConfig,
+    type: 'bar',
+    zoom: { enabled: true }
+    },
+    colors: chartMoneyColors,
+    series: [
+    {
+    name: "Total Venta",
+    data: graficos.map(d => [new Date(d.fecha).getTime(), d.venta])
+    },
+    {
+    name: "Total Costo",
+    data: graficos.map(d => [new Date(d.fecha).getTime(), d.costo])
+    }
+    ],
+    xaxis: {
+    type: 'datetime'
+    },
+    stroke: {
+    curve: 'straight',
+    width: 3
+    },
+    tooltip: {
+    shared: true,
+    intersect: false,
+    y: {
+    formatter: (val) => formatMoney(val)
+    }
+    }
+    }
+    );
+
+    chartMoney.render();
+
+    const chartQty = new ApexCharts(
+    document.querySelector("#chartQty"),
+    {
+    chart: {
+    ...baseChartConfig,
+    type: 'bar'
+    },
+    colors: chartQtyColors,
+    series: [
+    {
+    name: "Cantidad Ventas",
+    data: graficos.map(d => [new Date(d.fecha).getTime(), d.cantV])
+    },
+    {
+    name: "Cantidad Productos",
+    data: graficos.map(d => [new Date(d.fecha).getTime(), d.cantP])
+    }
+    ],
+    xaxis: {
+    type: 'datetime'
+    },
+    tooltip: {
+    shared: true,
+    intersect: false
+    }
+    }
+    );
+
+    chartQty.render();
+  </script>
+}
