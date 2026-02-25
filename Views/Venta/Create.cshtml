@@ -2,30 +2,32 @@
 
 @{
   ViewData["Title"] = "Crear Venta";
+  var action = ViewData["Action"]?.ToString() ?? "Create";
 }
 
-
-<div class="row">
+<div id="venta-app" class="row text-capitalize">
   <div class="col-md-12">
-    <form asp-action="@(ViewData["Action"]?.ToString() ?? "Create")">
+    <form asp-action="@action">
       <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-      @if (ViewData["Action"]?.ToString() == "Edit")
+
+      @if (action == "Edit")
       {
         <input type="hidden" asp-for="Id" />
         <div class="form-group">
-          <label asp-for="MotivoAnulacion" class="control-label"> Motivo Anulación</label>
+          <label asp-for="MotivoAnulacion" class="control-label">Motivo Anulación</label>
           <input asp-for="MotivoAnulacion" class="form-control" />
           <span asp-validation-for="MotivoAnulacion" class="text-danger"></span>
         </div>
       }
-      <div class="row">
 
+      <div class="row">
         <div class="form-group col">
           <label for="producto-select">Buscar Producto:</label>
           <select id="producto-select" class="form-control"></select>
         </div>
+
         <div class="form-group col">
-          <label asp-for="MetodoPagoId" class="control-label"> Métodos de Pago</label>
+          <label asp-for="MetodoPagoId" class="control-label">Métodos de Pago</label>
           <select asp-for="MetodoPagoId" class="form-control text-capitalize" asp-items="ViewBag.MetodoPagoId"></select>
         </div>
       </div>
@@ -35,193 +37,217 @@
           <tr>
             <th>ID</th>
             <th>Nombre</th>
-            <th>Cantidad</th>
+            <th style="width: 130px;">Cantidad</th>
             <th>Precio</th>
             <th>Subtotal</th>
             <th>Acción</th>
           </tr>
         </thead>
-        <tbody id="detalles-tbody">
-          <!-- Filas dinámicas aquí -->
+
+        <tbody>
+          <tr v-for="item in detalles" :key="item.guid">
+            <td>
+              {{ item.idProducto }}
+
+              <input type="hidden" name="Detalles.Index" :value="item.guid" />
+              <input type="hidden" :name="`Detalles[${item.guid}].IdProducto`" :value="item.idProducto" />
+            </td>
+
+            <td>{{ item.nombre }}</td>
+
+            <td>
+              <input type="number" class="form-control" v-model.number="item.cantidad"
+                     :name="`Detalles[${item.guid}].Cantidad`" />
+            </td>
+
+            <td>{{ item.precioUnitario }}</td>
+            <td>{{ item.cantidad * item.precioUnitario }}</td>
+
+            <td>
+              <button type="button" class="btn btn-danger btn-sm" @@click="removerFila(item.guid)">
+                Remover
+              </button>
+            </td>
+          </tr>
+
+          <tr v-if="detalles.length === 0">
+            <td colspan="6" class="text-center text-muted">Sin productos agregados</td>
+          </tr>
         </tbody>
+
         <tfoot>
           <tr>
             <td colspan="4"><strong>Total:</strong></td>
-            <td id="total-amount">0.00</td>
+            <td>{{ total }}</td>
             <td></td>
           </tr>
         </tfoot>
       </table>
 
-
       <div class="d-flex justify-content-between mt-3">
-        <a asp-action="Index" class="btn btn-secondary">
-          Volver al Listado
-        </a>
-        <input type="submit" value="Crear" class="btn btn-primary" />
-
+        <a asp-action="Index" class="btn btn-secondary">Volver a Ventas</a>
+        <input type="submit" value="@(action == "Edit" ? "Guardar Cambios" : "Crear")" class="btn btn-primary" />
       </div>
-
     </form>
   </div>
 </div>
 
-
 @section Scripts {
-  @{
-    await Html.RenderPartialAsync("_ValidationScriptsPartial");
-  }
-  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
   <script>
-    let detalles = @Html.Raw(Json.Serialize(ViewData["Detalles"] ?? new List<object>()));
-    let productosCache = {};
-    function generarGuid() {
-    return crypto.randomUUID();
-    }
+                // Para edit o falla del create
+                const detallesIniciales = @Html.Raw(Json.Serialize(ViewData["Detalles"] ?? new List<object>()));
 
-    document.addEventListener("DOMContentLoaded", function () {
-    // Inicializar Tom Select para productos
-    new TomSelect("#producto-select", {
-    valueField: "id",
-    labelField: "nombre",
-    searchField: ["codigo", "nombre"],
-    persist: false,
-    cache: false,
-    load: function (query, callback) {
-    if (query.length < 1) return callback([]);
-    fetch(`/api/productos/search?q=${encodeURIComponent(query)}`)
-    .then(r => r.json())
-    .then(data => callback(data))
-    .catch(() => callback());
-    },
+                const { createApp } = Vue;
 
-    onType: function () {
+                const app = createApp({
+                  data() {
+                    return {
+                      detalles: [],
+                      productosCache: {},
+                      tom: null
+                    };
+                  },
 
-    this.clearOptions();
-    this.lastQuery = null;
-    },
-    onBlur: function () {
-    this.clearOptions();
-    this.lastQuery = null;
-    },
-    onChange: function (id) {
-    if (!id) return;
+                  computed: {
+                    total() {
+                      return this.detalles.reduce((sum, d) => {
+                        const cantidad = Number(d.cantidad) || 0;
+                        const precio = Number(d.precioUnitario) || 0;
+                        return sum + (cantidad * precio);
+                      }, 0);
+                    }
+                  },
 
-    agregarProducto(id);
+                  methods: {
+                    generarGuid() {
+                      return crypto.randomUUID();
+                    },
 
-    this.clear();
-    this.clearOptions();
-    },
+                    async obtenerProducto(id) {
+                      if (this.productosCache[id]) { return this.productosCache[id]; }
 
-    render: {
-    option: function (item, escape) {
-    return `<div>[${escape(item.codigo)}] ${escape(item.nombre)} — $${escape(item.precioVenta)}</div>`;
-    }
-    }
-    });
+                      const resp = await fetch(`/api/productos/${id}`);
+                      if (!resp.ok) {
+                        showToast("danger", "Producto no encontrado"); }
+                      const p = await resp.json();
+                      this.productosCache[id] = p;
+                      return p;
+                    },
 
-    // Cargar detalles existentes
-    detalles.forEach(async d => {
-    const guid = generarGuid();
-    if (productosCache[d.idProducto]) {
-    agregarFila(d.idProducto, productosCache[d.idProducto].nombre, d.cantidad, productosCache[d.idProducto].precio, guid);
-    } else {
-    try {
-    const response = await fetch(`/api/productos/${d.idProducto}`);
-    if (response.ok) {
-    const producto = await response.json();
-    productosCache[d.idProducto] = producto;
-    agregarFila(d.idProducto, producto.nombre, d.cantidad, producto.precioVenta, guid);
-    }
-    } catch (error) {
-    console.error('Error cargando producto existente:', error);
-    }
-    }
-    });
-    calcularTotal();
-    });
+                    agregarFilaDesdeProducto(producto, cantidad = 1) {
+                      // existe
+                      const existente = this.detalles.find(
+                        d => d.idProducto === producto.id
+                      );
 
-    async function agregarProducto(id) {
-    if (productosCache[id]) {
-    const guid = generarGuid();
-    agregarFila(id, productosCache[id].nombre, 1, productosCache[id].precio, guid);
-    return;
-    }
-    try {
-    const response = await fetch(`/api/productos/${id}`);
-    if (!response.ok) throw new Error('Producto no encontrado');
-    const producto = await response.json();
-    productosCache[id] = producto;
-    const guid = generarGuid();
-    agregarFila(id, producto.nombre, 1, producto.precioVenta, guid);
-    } catch (error) {
-    alert('Error obteniendo producto: ' + error.message);
-    }
-    }
+                      if (existente) {
+                        //  se incrementa el mismo
+                        existente.cantidad += Number(cantidad) || 1;
+                      } else {
+                        // agregar nuevo
+                        this.detalles.push({
+                          guid: this.generarGuid(),
+                          idProducto: producto.id,
+                          nombre: producto.nombre,
+                          cantidad: Number(cantidad) || 1,
+                          precioUnitario: Number(producto.precioVenta) || 0
+                        });
+                      }
+                    },
 
-    function agregarFila(idProducto, nombre, cantidad, precio, guid) {
-    const tbody = document.getElementById('detalles-tbody');
-    const row = document.createElement('tr');
-    row.dataset.guid = guid;
+                    async agregarProducto(id) {
+                      if (!id) return;
+                      try {
+                        const p = await this.obtenerProducto(id);
+                        this.agregarFilaDesdeProducto(p, 1);
+                      } catch (e) {
+                        if (window.showToast) {
+                          window.showToast("danger", "Error obteniendo producto: " + e.message);
+                        } else {
+                          alert("Error obteniendo producto: " + e.message);
+                        }
+                      }
+                    },
 
-    row.innerHTML = `
-    <td>${idProducto}
-    <input type="hidden" name="Detalles.Index" value="${guid}" />
-    <input type="hidden" name="Detalles[${guid}].IdProducto" value="${idProducto}" />
-    <input type="hidden" name="Detalles[${guid}].PrecioUnitario" value="${precio}" />
-    </td>
-    <td>${nombre}</td>
-    <td>
-    <input type="number"
-    class="form-control cantidad"
-    name="Detalles[${guid}].Cantidad"
-    value="${cantidad}"
-    min="1"
-    onchange="calcularSubtotal(this); calcularTotal();" />
-    </td>
-    <td class="precio">${precio.toFixed(2)}</td>
-    <td class="subtotal">${(cantidad * precio).toFixed(2)}</td>
-    <td>
-    <button type="button"
-    class="btn btn-danger btn-sm"
-    onclick="removerFila(this)">
-    Remover
-    </button>
-    </td>
-    `;
+                    removerFila(guid) {
+                      this.detalles = this.detalles.filter(x => x.guid !== guid);
+                    },
 
-    tbody.appendChild(row);
-    calcularTotal();
-    }
+                    async cargarDetallesExistentes() {
+                      for (const d of detallesIniciales) {
+                        try {
+                          const p = await this.obtenerProducto(d.idProducto);
+                          this.agregarFilaDesdeProducto(p, d.cantidad);
+                        } catch (e) {
+                          console.error("Error cargando producto existente:", e);
+                        }
+                      }
+                    },
 
-    function calcularSubtotal(input) {
-    const row = input.closest('tr');
-    const cantidad = parseFloat(input.value) || 0;
-    const precio = parseFloat(row.querySelector('.precio').textContent) || 0;
-    const subtotal = cantidad * precio;
-    row.querySelector('.subtotal').textContent = subtotal.toFixed(2);
-    }
+                    initTomSelect() {
+                      const vm = this;
 
-    function calcularTotal() {
-    const subtotales = Array.from(document.querySelectorAll('.subtotal')).map(td => parseFloat(td.textContent) || 0);
-    const total = subtotales.reduce((sum, val) => sum + val, 0);
-    document.getElementById('total-amount').textContent = total.toFixed(2);
-    }
+                      this.tom = new TomSelect("#producto-select", {
+                        valueField: "id",
+                        labelField: "nombre",
+                        searchField: ["codigo", "nombre"],
+                        persist: false,
+                        cache: false,
 
-    function removerFila(button) {
-    button.closest('tr').remove();
-    calcularTotal();
-    }
+                        load: function (query, callback) {
+                          if (!query || query.length < 1) return callback([]);
+                          fetch(`/api/productos/search?q=${encodeURIComponent(query)}`)
+                            .then(r => r.json())
+                            .then(data => callback(data))
+                            .catch(() => callback([]));
+                        },
 
-    // Validación antes de enviar
-    @* document.querySelector('form').addEventListener('submit', function (event) {
-    const rows = document.querySelectorAll('#detalles-tbody tr');
-    if (rows.length === 0) {
-    alert('Agregue al menos un detalle a la venta.');
-    event.preventDefault();
-    return false;
-    }
-    }); *@
+                        onType: function () {
+                          this.clearOptions();
+                          this.lastQuery = null;
+                        },
+
+                        onBlur: function () {
+                          this.clearOptions();
+                          this.lastQuery = null;
+                        },
+
+                        // uso arrow para capturar el 'this' del componente Vue (vm)
+                        onChange: id => {
+                          if (!id) return;
+                          vm.agregarProducto(id);
+
+                          // limpiar seleccion en TomSelect (instancia en vm.tom)
+                          if (vm.tom) {
+                            vm.tom.clear();
+                            vm.tom.clearOptions();
+                          }
+                        },
+
+                        render: {
+                          option: function (item, escape) {
+                            return `<div>[${escape(item.codigo)}] ${escape(item.nombre)} — $${escape(
+                              item.precioVenta
+                            )}</div>`;
+                          }
+                        }
+                      });
+                    },
+
+
+                  },
+
+                  async mounted() {
+                    this.initTomSelect();
+                    await this.cargarDetallesExistentes();
+                  },
+
+                  beforeUnmount() {
+                    if (this.tom) this.tom.destroy();
+                  }
+                });
+
+                app.mount("#venta-app");
+                
   </script>
 }
