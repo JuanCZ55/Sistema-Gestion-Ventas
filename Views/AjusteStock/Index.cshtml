@@ -185,7 +185,7 @@
               @Html.AntiForgeryToken()
               <div class="modal-body">
                 <div class="row">
-                  <div class="form-group col-12">
+                  <div class="form-group col-12 text-capitalize">
                     <label for="producto-select">Buscar Producto:</label>
                     <select id="producto-select" class="form-control"></select>
                   </div>
@@ -219,7 +219,7 @@
                 </div>
 
 
-                <table id="detalles-table" class="table table-striped mt-3">
+                <table id="detalles-table" class="table table-striped mt-3 text-capitalize">
                   <thead>
                     <tr>
                       <th>ID</th>
@@ -261,10 +261,11 @@
               <p><strong>Tipo Movimiento:</strong> {{ viewData.tipoMovimiento }}</p>
               <p><strong>Motivo Ajuste:</strong> {{ viewData.motivoAjuste }}</p>
               <p><strong>Nota:</strong> {{ viewData.nota || 'N/A' }}</p>
-              <p><strong>Usuario:</strong> {{ viewData.usuario }}</p>
+              <p class="text-capitalize"><strong>Usuario:</strong> {{ viewData.usuario }}</p>
               <h5>Productos Afectados:</h5>
-              <ul @Html.Raw("v-if=\"viewData.detalles && viewData.detalles.length\"")>
-                <li @Html.Raw("v-for=\"detalle in viewData.detalles\"")>{{ detalle.producto }}: {{ detalle.cantidad }}
+              <ul @Html.Raw("v-if=\"viewData.detalles && viewData.detalles.length\"") class="text-capitalize">
+                <li class="text-capitalize" @Html.Raw("v-for=\"detalle in viewData.detalles\"")>{{ detalle.producto }}: {{
+                  detalle.cantidad }}
                 </li>
               </ul>
               <p @Html.Raw("v-else")>No hay productos</p>
@@ -394,7 +395,7 @@
       tipoMovimiento: data.tipoMovimiento === 1 ? 'Alta' : 'Baja',
       motivoAjuste: data.motivoAjuste?.nombre || 'N/A',
       nota: data.nota,
-      usuario: `${data.usuario?.apellido}, ${data.usuario?.nombre}`,
+      usuario: `${data.usuario?.nombre} ${data.usuario?.apellido} `,
       detalles: data.detalles?.map(d => ({ producto: d.producto?.nombre || 'N/A', cantidad: d.cantidad })) || []
       };
       } else {
