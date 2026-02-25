@@ -1,7 +1,9 @@
+using System.Globalization;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SistemaGestionVentas.Data;
@@ -124,7 +126,17 @@ builder.Services.AddAuthorization(options =>
 // Servicios de controladores y vistas
 builder.Services.AddControllersWithViews();
 
+// Configurar cultura invariante para decimales con punto
+var defaultCulture = new CultureInfo("en-US");
+var localizationOptions = new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(defaultCulture),
+    SupportedCultures = new[] { defaultCulture },
+    SupportedUICultures = new[] { defaultCulture },
+};
+
 var app = builder.Build();
+app.UseRequestLocalization(localizationOptions);
 
 // Pipeline de middleware
 if (!app.Environment.IsDevelopment())
