@@ -55,6 +55,7 @@ namespace SistemaGestionVentas.Controllers
                 new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
                 new Claim(ClaimTypes.Name, $"{usuario.Nombre} {usuario.Apellido}"),
                 new Claim(ClaimTypes.Role, usuario.Rol.ToString()),
+                new Claim("Avatar", usuario.Avatar ?? ""),
             };
             var identity = new ClaimsIdentity(
                 claims,

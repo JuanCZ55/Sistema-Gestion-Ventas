@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -152,6 +155,7 @@ namespace SistemaGestionVentas.Controllers
             {
                 await _context.SaveChangesAsync();
                 Notify("Perfil actualizado correctamente.");
+                await RefreshSignInAsync(exUsuario);
             }
             catch (Exception)
             {
@@ -209,6 +213,27 @@ namespace SistemaGestionVentas.Controllers
             // }
 
             return errores;
+        }
+
+        private async Task RefreshSignInAsync(Usuario usuario)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
+                new Claim(ClaimTypes.Name, $"{usuario.Nombre} {usuario.Apellido}"),
+                new Claim(ClaimTypes.Role, usuario.Rol.ToString()),
+                new Claim("Avatar", usuario.Avatar ?? ""),
+            };
+
+            var identity = new ClaimsIdentity(
+                claims,
+                CookieAuthenticationDefaults.AuthenticationScheme
+            );
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(identity)
+            );
         }
     }
 }

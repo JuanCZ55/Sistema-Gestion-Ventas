@@ -7,6 +7,7 @@
   </div> *@
   @{
     var nombreUsuario = User.Identity?.Name ?? "Usuario";
+    var avatarClaim = User.FindFirst("Avatar")?.Value;
   }
   <div class="sidebar-content">
     <a class="sidebar-link" asp-area="" asp-controller="Home" asp-action="Index">
@@ -54,7 +55,16 @@
   </div>
   <div class="sidebar-footer">
     <a asp-controller="Perfil" asp-action="Index" class="sidebar-link" style="height: 55px;">
-      <div class="sidebar-icon"><i class="bi bi-person-gear"></i></div>
+      <div class="sidebar-icon">
+        @if (!string.IsNullOrWhiteSpace(avatarClaim))
+        {
+          <img src="@avatarClaim" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" />
+        }
+        else
+        {
+          <i class="bi bi-person-circle"></i>
+        }
+      </div>
       <span class="sidebar-text text-capitalize">@nombreUsuario</span>
     </a>
     <form asp-controller="Login" asp-action="Logout" method="post" class="sidebar-link" style="height: 50px;">
