@@ -18,14 +18,63 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((data) => callback(data))
         .catch(() => callback());
     },
-    onType: function (str) {
-      if (str === "") {
-        this.clearOptions();
-      }
+    onType: function () {
+      this.clearOptions();
+      this.lastQuery = null;
     },
-    onChange: function (id) {
-      if (!id) return;
-      onSeleccion(id);
+    onBlur: function () {
+      this.clearOptions();
+      this.lastQuery = null;
+    },
+    onChange: function (value) {
+      if (!value) return;
+
+      // Hacer fetch al API para obtener detalles del producto
+      fetch(`/api/productos/${value}`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Error al cargar el producto");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          // Poblar los campos del modal con los datos del producto
+          document.getElementById("detail-codigo").textContent = data.codigo;
+          document.getElementById("detail-nombre").textContent = data.nombre;
+          document.getElementById("detail-precio").textContent =
+            `$${data.precioVenta}`;
+          document.getElementById("detail-stock").textContent = data.stock;
+          document.getElementById("detail-categoria").textContent =
+            data.categoria?.nombre ?? "Sin categoría";
+          document.getElementById("detail-proveedor").textContent =
+            data.proveedor?.nombreContacto ?? "Sin proveedor";
+
+          // Manejar la imagen
+          const imgElement = document.getElementById("detail-imagen");
+          const noImgElement = document.getElementById("detail-no-imagen");
+
+          if (data.imagen) {
+            imgElement.src = data.imagen;
+            imgElement.style.display = "block";
+            noImgElement.style.display = "none";
+          } else {
+            imgElement.style.display = "none";
+            noImgElement.style.display = "block";
+          }
+
+          // Abrir el modal
+          const modal = new bootstrap.Modal(
+            document.getElementById("productDetailsModal"),
+          );
+          this.clear();
+          this.clearOptions();
+          this.lastQuery = null;
+          modal.show();
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          showToast("danger", "Error al cargar los detalles del producto");
+        });
     },
     render: {
       option: function (item, escape) {

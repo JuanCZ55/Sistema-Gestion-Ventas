@@ -1,7 +1,55 @@
 <header class="top-navbar">
   <h4 class="m-0 ">@ViewBag.Title</h4>
   <div>
-    <select id="user-select" placeholder="Buscar Producto..." autocomplete="off">
+    <select id="user-select" placeholder="Buscar Producto..." autocomplete="off" class="form-control">
     </select>
   </div>
 </header>
+
+@* Modal *@
+<div class="modal fade" id="productDetailsModal" tabindex="-1" aria-labelledby="productDetailsModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="productDetailsModalLabel">Detalles del Producto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="image-preview-container" id="detail-imagen-container">
+              <img id="detail-imagen" class="image-preview-img" style="display: none;" alt="Imagen del producto">
+              <p id="detail-no-imagen" class="text-muted text-center" style="padding: 100px 20px;">Sin imagen disponible
+              </p>
+            </div>
+          </div>
+          <div class="col-md-6 text-capitalize">
+            <dl class="row mb-0">
+              <dt class="col-sm-4">Código:</dt>
+              <dd class="col-sm-8" id="detail-codigo">-</dd>
+
+              <dt class="col-sm-4">Nombre:</dt>
+              <dd class="col-sm-8" id="detail-nombre">-</dd>
+
+              <dt class="col-sm-4">Precio Venta:</dt>
+              <dd class="col-sm-8" id="detail-precio">-</dd>
+
+              <dt class="col-sm-4">Stock:</dt>
+              <dd class="col-sm-8" id="detail-stock">-</dd>
+
+              <dt class="col-sm-4">Categoría:</dt>
+              <dd class="col-sm-8" id="detail-categoria">-</dd>
+
+              <dt class="col-sm-4">Proveedor:</dt>
+              <dd class="col-sm-8" id="detail-proveedor">-</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
